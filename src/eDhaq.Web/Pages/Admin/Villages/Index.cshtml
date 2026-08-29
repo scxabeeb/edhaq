@@ -1,0 +1,100 @@
+@page
+@model eDhaq.Web.Pages.Admin.Villages.IndexModel
+@{
+    ViewData["Title"] = "Villages";
+}
+
+<h2 class="page-title mb-3">Villages &amp; Sub-Villages</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-10">
+                <select asp-for="CityFilter" asp-items="Model.CityOptions" class="form-select">
+                    <option value="">All cities</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid"><button class="btn btn-outline-dark" type="submit">Filter</button></div>
+        </form>
+
+        <form method="post" asp-page-handler="CreateVillage" class="row g-2">
+            <div class="col-md-5">
+                <select asp-for="CityId" asp-items="Model.CityOptions" class="form-select">
+                    <option value="">-- Select city --</option>
+                </select>
+            </div>
+            <div class="col-md-5"><input asp-for="VillageName" class="form-control" placeholder="Village name" /></div>
+            <div class="col-md-2 d-grid"><button class="btn btn-edhaq" type="submit">Add Village</button></div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Villages.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center text-muted py-4">
+            No villages yet. Add a village using the form above.
+        </div>
+    </div>
+}
+
+@foreach (var village in Model.Villages)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <strong>@village.Name</strong>
+                <span class="text-muted ms-2">@village.CityName</span>
+                @if (!village.IsActive)
+                {
+                    <span class="badge bg-secondary ms-2">Disabled</span>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <form method="post" asp-page-handler="ToggleVillage" asp-route-id="@village.Id">
+                    <button class="btn btn-sm btn-outline-dark" type="submit">@(village.IsActive ? "Disable" : "Enable")</button>
+                </form>
+                <form method="post" asp-page-handler="DeleteVillage" asp-route-id="@village.Id"
+                      onsubmit="return confirm('Delete village @village.Name and its sub-villages?');">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (village.SubVillages.Any())
+            {
+                <table class="table table-sm table-hover align-middle mb-3">
+                    <thead><tr><th>Sub-Village</th><th>Status</th><th style="width:200px"></th></tr></thead>
+                    <tbody>
+                    @foreach (var sub in village.SubVillages)
+                    {
+                        <tr>
+                            <td>@sub.Name</td>
+                            <td>@(sub.IsActive ? "Active" : "Disabled")</td>
+                            <td class="d-flex gap-2">
+                                <form method="post" asp-page-handler="ToggleSubVillage" asp-route-id="@sub.Id">
+                                    <button class="btn btn-sm btn-outline-dark" type="submit">@(sub.IsActive ? "Disable" : "Enable")</button>
+                                </form>
+                                <form method="post" asp-page-handler="DeleteSubVillage" asp-route-id="@sub.Id"
+                                      onsubmit="return confirm('Delete sub-village @sub.Name?');">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-muted mb-3">No sub-villages yet.</p>
+            }
+
+            <form method="post" asp-page-handler="AddSubVillage" class="row g-2">
+                <input type="hidden" asp-for="VillageId" value="@village.Id" />
+                <div class="col-md-8"><input asp-for="SubVillageName" class="form-control" placeholder="Sub-village name for @village.Name" /></div>
+                <div class="col-md-4 d-grid"><button class="btn btn-outline-dark" type="submit">Add Sub-Village</button></div>
+            </form>
+        </div>
+    </div>
+}

@@ -65,8 +65,8 @@
         var canSeeFinance  = isAdmin || isManager || isCashier;
 
         // Auto-expand groups based on current path
-        var adminOpsActive   = IsPathMatch("/Admin", true) && !IsPathMatch("/Admin/Services", true) && !IsPathMatch("/Admin/Coupons", true) && !IsPathMatch("/Admin/Cities", true) && !IsPathMatch("/Admin/Settings", true) && !IsPathMatch("/Admin/AuditLogs", true) && !IsPathMatch("/Admin/Roles", true);
-        var adminSetupActive = IsPathMatch("/Admin/Services", true) || IsPathMatch("/Admin/Coupons", true) || IsPathMatch("/Admin/Cities", true) || IsPathMatch("/Admin/Settings", true) || IsPathMatch("/Admin/AuditLogs", true) || IsPathMatch("/Admin/Roles", true);
+        var adminOpsActive   = IsPathMatch("/Admin", true) && !IsPathMatch("/Admin/Services", true) && !IsPathMatch("/Admin/Coupons", true) && !IsPathMatch("/Admin/Cities", true) && !IsPathMatch("/Admin/Villages", true) && !IsPathMatch("/Admin/Settings", true) && !IsPathMatch("/Admin/AuditLogs", true) && !IsPathMatch("/Admin/Roles", true);
+        var adminSetupActive = IsPathMatch("/Admin/Services", true) || IsPathMatch("/Admin/Coupons", true) || IsPathMatch("/Admin/Cities", true) || IsPathMatch("/Admin/Villages", true) || IsPathMatch("/Admin/Settings", true) || IsPathMatch("/Admin/AuditLogs", true) || IsPathMatch("/Admin/Roles", true);
         var customerActive   = IsPathMatch("/Customer", true);
         var driverActive     = IsPathMatch("/Driver", true);
         var staffActive      = IsPathMatch("/Staff", true);
@@ -170,6 +170,9 @@
                             </a>
                             <a class="nav-link @ActiveClass("/Admin/Cities", true)" asp-page="/Admin/Cities/Index">
                                 <span class="nav-icon"><i class="bi bi-pin-map"></i></span><span class="nav-text">Cities</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Villages", true)" asp-page="/Admin/Villages/Index">
+                                <span class="nav-icon"><i class="bi bi-signpost-split"></i></span><span class="nav-text">Villages</span>
                             </a>
                             <a class="nav-link @ActiveClass("/Admin/Settings", true)" asp-page="/Admin/Settings/Index">
                                 <span class="nav-icon"><i class="bi bi-gear"></i></span><span class="nav-text">Settings</span>
