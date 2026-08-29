@@ -1,0 +1,103 @@
+@page
+@model eDhaq.Web.Pages.Customer.Notifications.IndexModel
+@{
+    ViewData["Title"] = "Customer - Notifications";
+}
+
+<h2 class="page-title mb-3">My Notifications</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label asp-for="TypeFilter" class="form-label">Type</label>
+                <select asp-for="TypeFilter" class="form-select" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.NotificationType>()">
+                    <option value="">All Types</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label d-block">Status</label>
+                <div class="form-check form-switch pt-2">
+                    <input asp-for="UnreadOnly" class="form-check-input" />
+                    <label asp-for="UnreadOnly" class="form-check-label">Unread only</label>
+                </div>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-outline-dark">Filter</button>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-outline-secondary" asp-page-handler="MarkAllRead" formmethod="post">Mark all read</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        @if (Model.Notifications.Count == 0)
+        {
+            <p class="text-muted mb-0">No notifications yet.</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var n in Model.Notifications)
+                {
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <h6 class="mb-1">
+                                    @n.Title
+                                    @if (!n.IsRead)
+                                    {
+                                        <span class="badge text-bg-warning ms-2">New</span>
+                                    }
+                                </h6>
+                                <p class="mb-1 text-muted">@n.Message</p>
+                                <small class="text-secondary">@n.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</small>
+                                @if (!string.IsNullOrWhiteSpace(n.ActionUrl))
+                                {
+                                    <div>
+                                        <a href="@n.ActionUrl" class="small">Open related page</a>
+                                    </div>
+                                }
+                            </div>
+                            @if (!n.IsRead)
+                            {
+                                <form method="post" asp-page-handler="MarkRead">
+                                    <input type="hidden" name="notificationId" value="@n.Id" />
+                                    <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                    <input type="hidden" name="TypeFilter" value="@Model.TypeFilter" />
+                                    <input type="hidden" name="UnreadOnly" value="@Model.UnreadOnly" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Mark as read</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@{
+    var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+}
+
+@if (totalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination">
+            @for (var p = 1; p <= totalPages; p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : null)">
+                    <a class="page-link"
+                       asp-page="./Index"
+                       asp-route-PageNumber="@p"
+                       asp-route-TypeFilter="@Model.TypeFilter"
+                       asp-route-UnreadOnly="@Model.UnreadOnly">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

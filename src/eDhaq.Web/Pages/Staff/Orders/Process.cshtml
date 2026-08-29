@@ -1,0 +1,223 @@
+@page
+@model eDhaq.Web.Pages.Staff.Orders.ProcessModel
+@{
+    ViewData["Title"] = "Staff - Order Processing";
+}
+
+<h2 class="page-title mb-3">Customer Orders Intake & Processing</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2">
+            <div class="col-md-6">
+                <input asp-for="Search" class="form-control" placeholder="Search order/customer/email" />
+            </div>
+            <div class="col-md-3">
+                <select asp-for="StatusFilter" class="form-select" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.OrderStatus>()">
+                    <option value="">All Stages</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button class="btn btn-outline-dark" type="submit">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form id="bulkAdvanceForm" method="post" asp-page-handler="BulkAdvance" class="row g-2 mb-3">
+            <input type="hidden" name="Search" value="@Model.Search" />
+            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+            <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+            <div class="col-md-7">
+                <small class="text-muted">Select orders and move each to its next valid stage.</small>
+            </div>
+            <div class="col-md-3 d-grid ms-auto">
+                <button class="btn btn-sm btn-outline-dark" type="submit">Bulk Update</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>
+                        <input type="checkbox" id="selectAllOrders" />
+                    </th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Current Stage</th>
+                    <th>Pickup Schedule</th>
+                    <th>Driver Assignment</th>
+                    <th>Service</th>
+                    <th>Set Stage</th>
+                    <th>Next Stage</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var order in Model.Orders)
+                {
+                    <tr>
+                        <td>
+                            <input type="checkbox"
+                                   name="SelectedOrderIds"
+                                   value="@order.Id"
+                                   form="bulkAdvanceForm"
+                                   class="order-select" />
+                        </td>
+                        <td>@order.OrderNumber</td>
+                        <td>@order.Customer.User.FirstName @order.Customer.User.LastName</td>
+                        <td><span class="badge text-bg-light">@order.Status</span></td>
+                        <td>
+                            <form method="post" asp-page-handler="SchedulePickup" class="d-flex gap-2 align-items-center">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <input type="datetime-local"
+                                       name="PickupScheduledAt"
+                                       value="@(order.PickupScheduledAt.Year < 2000 ? string.Empty : order.PickupScheduledAt.ToString("yyyy-MM-ddTHH:mm"))"
+                                       class="form-control form-control-sm"
+                                       style="min-width: 180px;" />
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Set</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="AssignDriver" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="DriverId" class="form-select form-select-sm" style="min-width: 220px;">
+                                    <option value="">Select Driver</option>
+                                    @foreach (var driver in Model.DriverOptions)
+                                    {
+                                        var selectedDriverId = Model.GetPickupAssignment(order)?.DriverId;
+                                        if (selectedDriverId?.ToString() == driver.Value)
+                                        {
+                                            <option value="@driver.Value" selected>@driver.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@driver.Value">@driver.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-primary" type="submit" name="isPickup" value="true">Assign Pickup</button>
+                                <button class="btn btn-sm btn-outline-success" type="submit" name="isPickup" value="false">Assign Delivery</button>
+                            </form>
+                            @{
+                                var pickupAssignment = Model.GetPickupAssignment(order);
+                                var deliveryAssignment = Model.GetDeliveryAssignment(order);
+                            }
+                            <div class="small text-muted mt-1">
+                                <div>Pickup: @(pickupAssignment?.Driver?.User is null ? "Not assigned" : $"{pickupAssignment.Driver.User.FirstName} {pickupAssignment.Driver.User.LastName}")</div>
+                                <div>Delivery: @(deliveryAssignment?.Driver?.User is null ? "Not assigned" : $"{deliveryAssignment.Driver.User.FirstName} {deliveryAssignment.Driver.User.LastName}")</div>
+                            </div>
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="AssignService" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="ServiceId" class="form-select form-select-sm" style="min-width: 230px;">
+                                    @foreach (var service in Model.ServiceOptions)
+                                    {
+                                        var selectedServiceId = order.Items.FirstOrDefault()?.ServiceId;
+                                        if (selectedServiceId?.ToString() == service.Value)
+                                        {
+                                            <option value="@service.Value" selected>@service.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@service.Value">@service.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Set</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="SetProcessingStage" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="ProcessingStatus" class="form-select form-select-sm" style="min-width: 180px;">
+                                    @foreach (var stage in Model.ProcessingStageOptions)
+                                    {
+                                        if (stage.Value == order.Status.ToString())
+                                        {
+                                            <option value="@stage.Value" selected>@stage.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@stage.Value">@stage.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Set</button>
+                            </form>
+                        </td>
+                        <td>
+                            @if (Model.GetNextStage(order.Status) is eDhaq.Models.Enums.OrderStatus nextStage)
+                            {
+                                <form method="post" asp-page-handler="Advance" class="d-flex gap-2 align-items-center">
+                                    <input type="hidden" name="OrderId" value="@order.Id" />
+                                    <input type="hidden" name="Search" value="@Model.Search" />
+                                    <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                    <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                    <span class="small text-muted">@nextStage</span>
+                                    <button class="btn btn-sm btn-edhaq" type="submit">Advance</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">No next stage</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@{
+    var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+}
+
+@section Scripts {
+<script>
+(() => {
+    const selectAll = document.getElementById('selectAllOrders');
+    const checkboxes = document.querySelectorAll('.order-select');
+    if (!selectAll || checkboxes.length === 0) return;
+
+    selectAll.addEventListener('change', () => {
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    });
+})();
+</script>
+}
+
+@if (totalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination">
+            @for (var p = 1; p <= totalPages; p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : null)">
+                    <a class="page-link"
+                       asp-page="./Process"
+                       asp-route-PageNumber="@p"
+                       asp-route-Search="@Model.Search"
+                       asp-route-StatusFilter="@Model.StatusFilter">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

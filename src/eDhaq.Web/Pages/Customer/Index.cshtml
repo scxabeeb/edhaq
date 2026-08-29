@@ -1,0 +1,43 @@
+@page
+@model eDhaq.Web.Pages.Customer.IndexModel
+@{
+    ViewData["Title"] = "Customer Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Welcome, @Model.Dashboard.CustomerName</h2>
+        <p class="text-muted mb-0">Track and manage your laundry orders.</p>
+    </div>
+    <a class="btn btn-edhaq" asp-page="/Customer/Orders/Create">Book Pickup</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="metric-card"><span>Active Orders</span><h4>@Model.Dashboard.ActiveOrders</h4></div></div>
+    <div class="col-md-4"><div class="metric-card"><span>Completed Orders</span><h4>@Model.Dashboard.CompletedOrders</h4></div></div>
+    <div class="col-md-4"><div class="metric-card"><span>Wallet Balance</span><h4>@Model.Dashboard.WalletBalance.ToString("C")</h4></div></div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <h5 class="card-title">Recent Orders</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr><th>Order #</th><th>Status</th><th>Total</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var order in Model.Dashboard.RecentOrders)
+                {
+                    <tr>
+                        <td>@order.OrderNumber</td>
+                        <td>@order.Status</td>
+                        <td>@order.TotalAmount.ToString("C")</td>
+                        <td>@order.CreatedAt.ToString("dd MMM yyyy")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

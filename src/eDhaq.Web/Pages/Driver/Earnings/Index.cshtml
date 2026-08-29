@@ -1,0 +1,28 @@
+@page
+@model eDhaq.Web.Pages.Driver.Earnings.IndexModel
+@{
+    ViewData["Title"] = "Driver Earnings";
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><div class="metric-card"><span>Total Earnings</span><h4>@Model.TotalEarnings.ToString("C")</h4></div></div>
+    <div class="col-md-6"><div class="metric-card"><span>Completed Assignments</span><h4>@Model.CompletedAssignments</h4></div></div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Order</th><th>Date</th><th>Earned</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Latest)
+            {
+                <tr>
+                    <td>@item.OrderNumber</td>
+                    <td>@item.Date.ToString("dd MMM yyyy HH:mm")</td>
+                    <td>@item.Amount.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,94 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "e-Dhaq";
+}
+
+<section class="public-hero mb-4">
+    <div class="public-hero-inner row g-4 align-items-center">
+        <div class="col-lg-7">
+            <span class="badge public-badge mb-3">Smart Laundry Pickup and Delivery</span>
+            <h2 class="public-hero-title">Book in one minute, track in real time, and get clean clothes delivered on schedule.</h2>
+            <p class="public-hero-copy">e-Dhaq helps customers, laundry staff, drivers, and admins work together in one connected workflow. Place orders, monitor progress, and pay with confidence.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-edhaq" asp-page="/Auth/Register">Create Account</a>
+                <a class="btn btn-outline-dark" asp-page="/Auth/Login">Login</a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="public-hero-panel">
+                <img src="~/images/logo.svg" alt="e-Dhaq" class="public-logo mb-3" />
+                <div class="public-hero-metrics">
+                    <div>
+                        <span>Live Tracking</span>
+                        <strong>Driver + Order Status</strong>
+                    </div>
+                    <div>
+                        <span>Operational Flow</span>
+                        <strong>Pickup to Delivery</strong>
+                    </div>
+                    <div>
+                        <span>Built-In Roles</span>
+                        <strong>Customer, Staff, Driver, Admin</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works" class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4 p-lg-5">
+        <h3 class="section-title mb-3">How It Works</h3>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="flow-step">
+                    <span>01</span>
+                    <h4>Set Addresses and Time</h4>
+                    <p>Choose pickup and delivery addresses, then select convenient time windows.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="flow-step">
+                    <span>02</span>
+                    <h4>Choose Service and Quantity</h4>
+                    <p>Select laundry services, quantities, and preferred payment method.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="flow-step">
+                    <span>03</span>
+                    <h4>Track Progress Live</h4>
+                    <p>Get updates from received, washing, and packaging to final delivery.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" class="row g-3">
+    <div class="col-lg-3 col-md-6">
+        <div class="feature-card h-100">
+            <h4>Customer Experience</h4>
+            <p>Simple booking, notification center, order history, and payment visibility.</p>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="feature-card h-100">
+            <h4>Admin Control</h4>
+            <p>Monitor metrics, users, services, pricing, coupons, and audit trail.</p>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="feature-card h-100">
+            <h4>Driver Operations</h4>
+            <p>Handle assignment actions, share location, and complete pickup/delivery.</p>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="feature-card h-100">
+            <h4>Laundry Workflow</h4>
+            <p>Move orders through sorting, washing, drying, ironing, and packaging stages.</p>
+        </div>
+    </div>
+</section>

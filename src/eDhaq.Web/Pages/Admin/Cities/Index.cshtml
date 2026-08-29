@@ -1,0 +1,45 @@
+@page
+@model eDhaq.Web.Pages.Admin.Cities.IndexModel
+@{
+    ViewData["Title"] = "Cities";
+}
+
+<h2 class="page-title mb-3">Cities</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-10"><input asp-for="Search" class="form-control" placeholder="Search city or country" /></div>
+            <div class="col-md-2 d-grid"><button class="btn btn-outline-dark" type="submit">Search</button></div>
+        </form>
+
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-5"><input asp-for="Input.Name" class="form-control" placeholder="City Name" /></div>
+            <div class="col-md-5"><input asp-for="Input.Country" class="form-control" placeholder="Country" /></div>
+            <div class="col-md-2 d-grid"><button class="btn btn-edhaq" type="submit">Add</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>City</th><th>Country</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model.Cities)
+            {
+                <tr>
+                    <td>@c.Name</td>
+                    <td>@c.Country</td>
+                    <td>@(c.IsActive ? "Active" : "Disabled")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Toggle" asp-route-id="@c.Id" asp-route-search="@Model.Search">
+                            <button class="btn btn-sm btn-outline-dark" type="submit">Toggle</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

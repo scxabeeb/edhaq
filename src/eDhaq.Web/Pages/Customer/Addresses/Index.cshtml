@@ -1,0 +1,117 @@
+@page
+@model eDhaq.Web.Pages.Customer.Addresses.IndexModel
+@{
+    ViewData["Title"] = "My Addresses";
+}
+
+<h2 class="page-title mb-3">Addresses</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="post" asp-page-handler="Add" class="row g-2">
+            <div class="col-md-2"><input asp-for="Input.Label" class="form-control" placeholder="Label" /></div>
+            <div class="col-md-3"><input asp-for="Input.Street" class="form-control" placeholder="Street / Landmark" /></div>
+            <div class="col-md-2"><input asp-for="Input.District" class="form-control" placeholder="District" /></div>
+            <div class="col-md-2"><select asp-for="Input.CityId" id="citySelect" class="form-select" asp-items="Model.CityOptions"></select></div>
+            <div class="col-md-2"><select asp-for="Input.VillageId" id="villageSelect" class="form-select" asp-items="Model.VillageOptions"></select></div>
+            <div class="col-md-2">
+                <select asp-for="Input.SubVillageId" id="subVillageSelect" class="form-select" asp-items="Model.SubVillageOptions">
+                    <option value="">Sub village (optional)</option>
+                </select>
+            </div>
+            <div class="col-md-1 form-check d-flex align-items-center"><input asp-for="Input.IsDefault" class="form-check-input" />Default</div>
+            <div class="col-md-1 d-grid"><button class="btn btn-edhaq" type="submit">Add</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Label</th><th>Address</th><th>Village</th><th>City</th><th>Default</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var a in Model.Addresses)
+            {
+                <tr>
+                    <td>@a.Label</td>
+                    <td>@a.Street</td>
+                    <td>@a.Village.Name@(a.SubVillage is not null ? $" / {a.SubVillage.Name}" : string.Empty)</td>
+                    <td>@a.City.Name</td>
+                    <td>@(a.IsDefault ? "Yes" : "No")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Delete" asp-route-id="@a.Id">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const citySelect = document.getElementById('citySelect');
+            const villageSelect = document.getElementById('villageSelect');
+            const subVillageSelect = document.getElementById('subVillageSelect');
+
+            if (!citySelect || !villageSelect || !subVillageSelect) {
+                return;
+            }
+
+            const fillSelect = (select, items, includeOptional) => {
+                const current = select.value;
+                select.innerHTML = '';
+
+                if (includeOptional) {
+                    const empty = document.createElement('option');
+                    empty.value = '';
+                    empty.textContent = 'Sub village (optional)';
+                    select.appendChild(empty);
+                }
+
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    select.appendChild(option);
+                });
+
+                if (current && [...select.options].some(o => o.value === current)) {
+                    select.value = current;
+                }
+            };
+
+            const loadVillages = async () => {
+                const cityId = citySelect.value;
+                if (!cityId) {
+                    fillSelect(villageSelect, [], false);
+                    fillSelect(subVillageSelect, [], true);
+                    return;
+                }
+
+                const res = await fetch(`?handler=Villages&cityId=${cityId}`);
+                const villages = await res.json();
+                fillSelect(villageSelect, villages, false);
+                await loadSubVillages();
+            };
+
+            const loadSubVillages = async () => {
+                const villageId = villageSelect.value;
+                if (!villageId) {
+                    fillSelect(subVillageSelect, [], true);
+                    return;
+                }
+
+                const res = await fetch(`?handler=SubVillages&villageId=${villageId}`);
+                const subs = await res.json();
+                fillSelect(subVillageSelect, subs, true);
+            };
+
+            citySelect.addEventListener('change', loadVillages);
+            villageSelect.addEventListener('change', loadSubVillages);
+        })();
+    </script>
+}

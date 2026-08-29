@@ -1,0 +1,29 @@
+@page
+@model eDhaq.Web.Pages.Admin.AuditLogs.IndexModel
+@{
+    ViewData["Title"] = "Audit Logs";
+}
+
+<h2 class="page-title mb-3">Audit Logs</h2>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>EntityId</th><th>IP</th><th>Details</th></tr></thead>
+            <tbody>
+            @foreach (var log in Model.Logs)
+            {
+                <tr>
+                    <td>@log.CreatedAt.ToString("dd MMM yyyy HH:mm:ss")</td>
+                    <td>@(log.User?.Email ?? log.UserId ?? "System")</td>
+                    <td>@log.Action</td>
+                    <td>@log.EntityName</td>
+                    <td>@log.EntityId</td>
+                    <td>@log.IpAddress</td>
+                    <td><small>@log.NewValues</small></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

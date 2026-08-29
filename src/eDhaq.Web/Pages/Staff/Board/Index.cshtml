@@ -1,0 +1,35 @@
+@page
+@model eDhaq.Web.Pages.Staff.Board.IndexModel
+@{
+    ViewData["Title"] = "Laundry Board";
+}
+
+<h2 class="page-title mb-3">Laundry Workflow Board</h2>
+
+<div class="row g-3">
+@foreach (var col in Model.Board)
+{
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><strong>@col.Key</strong> <span class="text-muted">(@col.Value.Count)</span></div>
+            <div class="card-body p-2">
+                @foreach (var order in col.Value)
+                {
+                    <div class="border rounded p-2 mb-2 bg-light-subtle">
+                        <div class="fw-semibold">@order.OrderNumber</div>
+                        <small>@order.Customer.User.FirstName @order.Customer.User.LastName</small>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="badge text-bg-light">@order.Status</span>
+                            <form method="post" asp-page-handler="MoveNext" class="d-inline">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="CurrentStatus" value="@order.Status" />
+                                <button class="btn btn-sm btn-edhaq" type="submit">Next</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+</div>

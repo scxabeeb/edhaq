@@ -1,0 +1,252 @@
+@page
+@model eDhaq.Web.Pages.Admin.Orders.IndexModel
+@{
+    ViewData["Title"] = "Admin - Orders";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Order Management</h2>
+    <a class="btn btn-outline-secondary"
+       asp-page="./Index"
+       asp-page-handler="ExportCsv"
+       asp-route-Search="@Model.Search"
+       asp-route-StatusFilter="@Model.StatusFilter"
+       asp-route-DateFrom="@Model.DateFrom"
+       asp-route-DateTo="@Model.DateTo"
+       asp-route-DatePreset="@Model.DatePreset"
+       asp-route-SortBy="@Model.SortBy">
+        Export CSV
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2">
+            <div class="col-md-4">
+                <input asp-for="Search" class="form-control" placeholder="Search order/customer/email" />
+            </div>
+            <div class="col-md-2">
+                <select asp-for="StatusFilter" class="form-select" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.OrderStatus>()">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input asp-for="DateFrom" type="date" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <input asp-for="DateTo" type="date" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <select asp-for="DatePreset" class="form-select">
+                    <option value="">Custom Range</option>
+                    <option value="today">Today</option>
+                    <option value="last7">Last 7 Days</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select asp-for="SortBy" class="form-select">
+                    <option value="created_desc">Newest First</option>
+                    <option value="created_asc">Oldest First</option>
+                    <option value="total_desc">Total: High to Low</option>
+                    <option value="total_asc">Total: Low to High</option>
+                    <option value="status_asc">Status: A-Z</option>
+                    <option value="status_desc">Status: Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-12 d-grid">
+                <button class="btn btn-outline-dark" type="submit">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>Pickup Schedule</th>
+                    <th>Driver</th>
+                    <th>Service</th>
+                    <th>Laundry Stage</th>
+                    <th>Activity</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var order in Model.Orders)
+                {
+                    <tr>
+                        <td>@order.OrderNumber</td>
+                        <td>@order.Customer.User.FirstName @order.Customer.User.LastName</td>
+                        <td>@order.Status</td>
+                        <td>
+                            <form method="post" asp-page-handler="SchedulePickup" class="d-flex gap-2 align-items-center">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DatePreset" value="@Model.DatePreset" />
+                                <input type="hidden" name="SortBy" value="@Model.SortBy" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <input type="datetime-local"
+                                       name="PickupScheduledAt"
+                                        value="@(order.PickupScheduledAt.Year < 2000 ? string.Empty : order.PickupScheduledAt.ToString("yyyy-MM-ddTHH:mm"))"
+                                       class="form-control form-control-sm"
+                                       style="min-width: 180px;" />
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Schedule</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="AssignDriver" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DatePreset" value="@Model.DatePreset" />
+                                <input type="hidden" name="SortBy" value="@Model.SortBy" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="DriverId" class="form-select form-select-sm" style="min-width: 220px;">
+                                    <option value="">Select Driver</option>
+                                    @foreach (var driver in Model.DriverOptions)
+                                    {
+                                        var selectedDriverId = Model.GetActiveAssignment(order)?.DriverId;
+                                        if (selectedDriverId?.ToString() == driver.Value)
+                                        {
+                                            <option value="@driver.Value" selected>@driver.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@driver.Value">@driver.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-primary" type="submit">@Model.GetDriverSlotLabel(order)</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="AssignService" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DatePreset" value="@Model.DatePreset" />
+                                <input type="hidden" name="SortBy" value="@Model.SortBy" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="ServiceId" class="form-select form-select-sm" style="min-width: 230px;">
+                                    @foreach (var service in Model.ServiceOptions)
+                                    {
+                                        var selectedServiceId = order.Items.FirstOrDefault()?.ServiceId;
+                                        if (selectedServiceId?.ToString() == service.Value)
+                                        {
+                                            <option value="@service.Value" selected>@service.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@service.Value">@service.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Set</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="SetProcessingStage" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DatePreset" value="@Model.DatePreset" />
+                                <input type="hidden" name="SortBy" value="@Model.SortBy" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="ProcessingStatus" class="form-select form-select-sm" style="min-width: 180px;">
+                                    @foreach (var stage in Model.ProcessingStageOptions)
+                                    {
+                                        if (stage.Value == order.Status.ToString())
+                                        {
+                                            <option value="@stage.Value" selected>@stage.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@stage.Value">@stage.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Stage</button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="small">
+                                @if (Model.GetPickupAssignment(order) is { } pickupAssignment)
+                                {
+                                    <div><strong>Pickup:</strong> @pickupAssignment.Driver.User.FirstName @pickupAssignment.Driver.User.LastName (@pickupAssignment.Status)</div>
+                                }
+                                @if (Model.GetDeliveryAssignment(order) is { } deliveryAssignment)
+                                {
+                                    <div><strong>Delivery:</strong> @deliveryAssignment.Driver.User.FirstName @deliveryAssignment.Driver.User.LastName (@deliveryAssignment.Status)</div>
+                                }
+                                @foreach (var activity in Model.GetRecentActivity(order))
+                                {
+                                    <div class="text-muted">@activity.CreatedAt.ToString("dd MMM HH:mm") - @activity.Status @(string.IsNullOrWhiteSpace(activity.Note) ? string.Empty : $"- {activity.Note}")</div>
+                                }
+                            </div>
+                        </td>
+                        <td>@order.TotalAmount.ToString("C")</td>
+                        <td>
+                            <form method="post" asp-page-handler="UpdateStatus" class="d-flex gap-2">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                                <input type="hidden" name="DatePreset" value="@Model.DatePreset" />
+                                <input type="hidden" name="SortBy" value="@Model.SortBy" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <select name="NewStatus" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.OrderStatus>()"></select>
+                                <input type="text" name="Note" class="form-control form-control-sm" placeholder="Note" />
+                                <button class="btn btn-sm btn-edhaq" type="submit">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@{
+    var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+}
+
+@if (totalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination">
+            @for (var p = 1; p <= totalPages; p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : null)">
+                    <a class="page-link"
+                       asp-page="./Index"
+                       asp-route-PageNumber="@p"
+                       asp-route-Search="@Model.Search"
+                       asp-route-StatusFilter="@Model.StatusFilter"
+                       asp-route-DateFrom="@Model.DateFrom"
+                       asp-route-DateTo="@Model.DateTo"
+                       asp-route-DatePreset="@Model.DatePreset"
+                       asp-route-SortBy="@Model.SortBy">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

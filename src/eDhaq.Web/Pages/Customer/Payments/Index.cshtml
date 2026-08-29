@@ -1,0 +1,43 @@
+@page
+@model eDhaq.Web.Pages.Customer.Payments.IndexModel
+@{
+    ViewData["Title"] = "My Payments";
+}
+
+<h2 class="page-title mb-3">Payment History</h2>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Order</th><th>Reference</th><th>Method</th><th>Status</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var p in Model.Payments)
+            {
+                <tr>
+                    <td>@p.Order.OrderNumber</td>
+                    <td>@p.TransactionReference</td>
+                    <td>@p.Method</td>
+                    <td>@p.Status</td>
+                    <td>@p.Amount.ToString("C")</td>
+                    <td>@p.CreatedAt.ToString("dd MMM yyyy HH:mm")</td>
+                    <td>
+                        @if (p.Status == eDhaq.Models.Enums.PaymentStatus.Pending)
+                        {
+                            <form method="post" asp-page-handler="Pay" class="d-flex gap-2 align-items-center justify-content-end">
+                                <input type="hidden" name="PaymentId" value="@p.Id" />
+                                <select name="Method" class="form-select form-select-sm" style="max-width: 160px;">
+                                    @foreach (var method in Html.GetEnumSelectList<eDhaq.Models.Enums.PaymentMethod>())
+                                    {
+                                        <option value="@method.Value" selected="@(method.Text == p.Method.ToString())">@method.Text</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-edhaq">Pay Now</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

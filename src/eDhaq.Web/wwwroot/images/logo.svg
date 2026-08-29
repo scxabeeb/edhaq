@@ -1,0 +1,17 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="e-Dhaq logo">
+  <defs>
+    <linearGradient id="logoRed" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D90D15"/>
+      <stop offset="1" stop-color="#C80D12"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="56" y="56" width="400" height="400" rx="72" fill="url(#logoRed)"/>
+
+  <text x="92" y="272" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="86" font-weight="700" letter-spacing="0.5">e-Dhaq</text>
+
+  <path d="M286 226C300 210 326 205 346 198C366 191 386 178 404 159C414 149 430 149 440 159" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M286 226L272 238" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M440 159V196" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M414 151C414 142 419 136 428 136C436 136 442 142 442 150" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+</svg>

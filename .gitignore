@@ -1,0 +1,111 @@
+# ============================================
+# macOS / OS Files
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Desktop.ini
+ehthumbs.db
+Thumbs.db
+
+# ============================================
+# .NET / Visual Studio
+# ============================================
+## User-specific files
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+## Build output directories (bin, obj, debug, release)
+*/bin/
+*/obj/
+*/[Dd]ebug/
+*/[Rr]ease/
+**/[Bb]in/
+**/[Oo]bj/
+
+## NuGet
+**/.nuget/
+packages/
+
+## Visual Studio workspace
+*.vs/
+.vscode.ipch/
+
+## VS Code temp files (keep launch.json & settings.json)
+.vscode/*.gz
+.vscode/ipch/
+.vscode/*.tmp
+
+## EF Core database files
+*.mdf
+*.ldf
+*.ndf
+*.bak
+*.rdc
+*.rdlc
+*.sdf
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+*.db
+*.db-shm
+*.db-wal
+
+## Azure / deployment secrets
+*.azurepubsettings
+*.publishsettings
+*.pem
+*.pfx
+
+# ============================================
+# Flutter / Dart (mobile app: edhaq_mobile)
+# ============================================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+## Build directories
+build/
+.dart_tool/
+
+## Flutter obfuscation / symbolication
+app.*.symbols
+app.*.map.json
+
+## Test coverage
+coverage/
+
+## iOS / Android build artifacts
+**/ios/Flutter/.last_build_id
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+
+# ============================================
+# IDE: IntelliJ / Android Studio
+# ============================================
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+*.log.*
+
+# ============================================
+# Temp / large junk files
+# ============================================
+*.gz
+*.tmp
+*.cache

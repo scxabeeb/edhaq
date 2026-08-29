@@ -1,0 +1,273 @@
+@page
+@model eDhaq.Web.Pages.Admin.Services.IndexModel
+@{
+    ViewData["Title"] = "Service Management";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="page-title mb-1">Laundry Services</h2>
+        <p class="text-muted mb-0" style="font-size:.9rem">@Model.Services.Count service(s) across @Model.Categories.Count categories</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="bi bi-folder-plus"></i> Add Category
+        </button>
+        <button class="btn btn-edhaq d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+            <i class="bi bi-plus-circle-fill"></i> Add Service
+        </button>
+    </div>
+</div>
+
+<!-- Services Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Service Name</th>
+                    <th>Category</th>
+                    <th>Price / Piece</th>
+                    <th>Est. Hours</th>
+                    <th>Sort</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model.Services)
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (!string.IsNullOrEmpty(s.IconClass))
+                            {
+                                <i class="bi @s.IconClass text-danger fs-5"></i>
+                            }
+                            <span class="fw-semibold">@s.Name</span>
+                        </div>
+                    </td>
+                    <td><span class="badge text-bg-light border">@s.Category?.Name</span></td>
+                    <td class="fw-semibold">$@s.PricePerPiece.ToString("0.00")</td>
+                    <td>@s.EstimatedHours h</td>
+                    <td>@s.SortOrder</td>
+                    <td>
+                        @if (s.IsActive)
+                        {
+                            <span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Disabled</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal" data-bs-target="#editServiceModal"
+                                    data-id="@s.Id"
+                                    data-name="@s.Name"
+                                    data-categoryid="@s.CategoryId"
+                                    data-price="@s.PricePerPiece"
+                                    data-hours="@s.EstimatedHours"
+                                    data-icon="@s.IconClass"
+                                    data-sort="@s.SortOrder">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="post" asp-page-handler="Toggle" asp-route-id="@s.Id">
+                                <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-outline-warning" : "btn-outline-success")" title="@(s.IsActive ? "Disable" : "Enable")">
+                                    <i class="bi @(s.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                </button>
+                            </form>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal" data-bs-target="#deleteServiceModal"
+                                    data-id="@s.Id" data-name="@s.Name">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (Model.Services.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No services yet. Click <strong>Add Service</strong> to get started.</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ADD SERVICE MODAL
+══════════════════════════════════════════════ -->
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-danger me-2"></i>Add Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Service Name <span class="text-danger">*</span></label>
+                            <input asp-for="Input.Name" class="form-control" placeholder="e.g. Wash & Iron" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                            <select asp-for="Input.CategoryId" class="form-select" asp-items="Model.CategoryOptions" required>
+                                <option value="">— Category —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Price per Piece ($) <span class="text-danger">*</span></label>
+                            <input asp-for="Input.PricePerPiece" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Est. Hours</label>
+                            <input asp-for="Input.EstimatedHours" type="number" step="0.5" min="0" class="form-control" placeholder="24" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Bootstrap Icon Class</label>
+                            <input asp-for="Input.IconClass" class="form-control" placeholder="bi-basket" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Sort Order</label>
+                            <input asp-for="Input.SortOrder" type="number" class="form-control" placeholder="0" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-edhaq"><i class="bi bi-check2-circle me-1"></i>Add Service</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     EDIT SERVICE MODAL
+══════════════════════════════════════════════ -->
+<div class="modal fade" id="editServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="Edit">
+                <input type="hidden" name="Input.Id" id="editSvcId" />
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil text-primary me-2"></i>Edit Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Service Name</label>
+                            <input name="Input.Name" id="editSvcName" type="text" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Category</label>
+                            <select name="Input.CategoryId" id="editSvcCategory" class="form-select">
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Price per Piece ($)</label>
+                            <input name="Input.PricePerPiece" id="editSvcPrice" type="number" step="0.01" min="0" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Est. Hours</label>
+                            <input name="Input.EstimatedHours" id="editSvcHours" type="number" step="0.5" min="0" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Icon Class</label>
+                            <input name="Input.IconClass" id="editSvcIcon" type="text" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Sort Order</label>
+                            <input name="Input.SortOrder" id="editSvcSort" type="number" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DELETE SERVICE MODAL
+══════════════════════════════════════════════ -->
+<div class="modal fade" id="deleteServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="Delete">
+                <input type="hidden" name="id" id="deleteSvcId" />
+                <div class="modal-body text-center py-4">
+                    <div class="text-danger mb-3" style="font-size:2.5rem"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <h5 class="fw-bold mb-1">Delete Service?</h5>
+                    <p class="text-muted" id="deleteSvcName" style="font-size:.9rem"></p>
+                    <p class="text-muted" style="font-size:.82rem">This cannot be undone.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash3 me-1"></i>Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ADD CATEGORY MODAL
+══════════════════════════════════════════════ -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="CreateCategory">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-folder-plus me-2 text-primary"></i>New Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Category Name <span class="text-danger">*</span></label>
+                    <input name="categoryName" type="text" class="form-control" placeholder="e.g. Express" required maxlength="100" />
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Edit service modal — populate fields
+    document.getElementById('editServiceModal').addEventListener('show.bs.modal', function(e) {
+        var btn = e.relatedTarget;
+        document.getElementById('editSvcId').value       = btn.dataset.id;
+        document.getElementById('editSvcName').value     = btn.dataset.name;
+        document.getElementById('editSvcPrice').value    = btn.dataset.price;
+        document.getElementById('editSvcHours').value    = btn.dataset.hours;
+        document.getElementById('editSvcIcon').value     = btn.dataset.icon;
+        document.getElementById('editSvcSort').value     = btn.dataset.sort;
+        var catSel = document.getElementById('editSvcCategory');
+        catSel.value = btn.dataset.categoryid;
+    });
+
+    // Delete service modal — populate id/name
+    document.getElementById('deleteServiceModal').addEventListener('show.bs.modal', function(e) {
+        var btn = e.relatedTarget;
+        document.getElementById('deleteSvcId').value    = btn.dataset.id;
+        document.getElementById('deleteSvcName').textContent = btn.dataset.name;
+    });
+</script>
+}

@@ -1,0 +1,46 @@
+@page
+@model eDhaq.Web.Pages.Admin.Settings.IndexModel
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<h2 class="page-title mb-3">Application Settings</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-3"><input asp-for="Input.Key" class="form-control" placeholder="Key" /></div>
+            <div class="col-md-4"><input asp-for="Input.Value" class="form-control" placeholder="Value" /></div>
+            <div class="col-md-3"><input asp-for="Input.Description" class="form-control" placeholder="Description" /></div>
+            <div class="col-md-1 form-check d-flex align-items-center"><input asp-for="Input.IsPublic" class="form-check-input" />Public</div>
+            <div class="col-md-1 d-grid"><button class="btn btn-edhaq" type="submit">Add</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Key</th><th>Value</th><th>Public</th><th>Updated</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var s in Model.Settings)
+            {
+                <tr>
+                    <td>@s.Key</td>
+                    <td>
+                        <form method="post" asp-page-handler="Update" class="d-flex gap-2">
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <input type="text" name="value" value="@s.Value" class="form-control form-control-sm" />
+                            <input type="checkbox" name="isPublic" value="true" @(s.IsPublic ? "checked" : null) class="form-check-input mt-2" />
+                            <button class="btn btn-sm btn-outline-dark" type="submit">Save</button>
+                        </form>
+                    </td>
+                    <td>@(s.IsPublic ? "Yes" : "No")</td>
+                    <td>@s.UpdatedAt.ToString("dd MMM yyyy HH:mm")</td>
+                    <td></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

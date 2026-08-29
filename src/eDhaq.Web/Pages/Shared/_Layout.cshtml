@@ -1,0 +1,355 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - e-Dhaq</title>
+    <link rel="icon" type="image/svg+xml" href="~/images/logo.svg" />
+    <link rel="shortcut icon" type="image/svg+xml" href="~/images/logo.svg" />
+    <link rel="apple-touch-icon" href="~/images/logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/eDhaq.Web.styles.css" asp-append-version="true" />
+</head>
+<body>
+    @{
+        var isSignedIn = User?.Identity?.IsAuthenticated ?? false;
+        var requestPath = Context?.Request?.Path.Value ?? string.Empty;
+
+        bool IsPathMatch(string path, bool includeChildren = false)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            var indexPath = string.Equals(path, "/", StringComparison.Ordinal) ? "/" : $"{path}/Index";
+
+            if (string.Equals(requestPath, path, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(requestPath, indexPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (includeChildren)
+            {
+                var prefix = path.EndsWith('/') ? path : $"{path}/";
+                return requestPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
+
+        string ActiveClass(string path, bool includeChildren = false)
+        {
+            return IsPathMatch(path, includeChildren) ? "active" : string.Empty;
+        }
+
+        var isAdmin          = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.Administrator) ?? false);
+        var isManager        = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.Manager) ?? false);
+        var isCustomer       = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.Customer) ?? false);
+        var isCashier        = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.Cashier) ?? false);
+        var isPickupDriver   = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.PickupDriver) ?? false);
+        var isDeliveryDriver = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.DeliveryDriver) ?? false);
+        var isLaundryStaff   = isSignedIn && (User?.IsInRole(eDhaq.Common.Constants.AppRoles.LaundryStaff) ?? false);
+
+        var canSeeAdmin    = isAdmin || isManager;
+        var canSeeCustomer = isAdmin || isCustomer;
+        var canSeeCashier  = isAdmin || isCashier;
+        var canSeeDriver   = isAdmin || isPickupDriver || isDeliveryDriver;
+        var canSeeStaff    = isAdmin || isLaundryStaff;
+        var canSeeFinance  = isAdmin || isManager || isCashier;
+
+        // Auto-expand groups based on current path
+        var adminOpsActive   = IsPathMatch("/Admin", true) && !IsPathMatch("/Admin/Services", true) && !IsPathMatch("/Admin/Coupons", true) && !IsPathMatch("/Admin/Cities", true) && !IsPathMatch("/Admin/Settings", true) && !IsPathMatch("/Admin/AuditLogs", true) && !IsPathMatch("/Admin/Roles", true);
+        var adminSetupActive = IsPathMatch("/Admin/Services", true) || IsPathMatch("/Admin/Coupons", true) || IsPathMatch("/Admin/Cities", true) || IsPathMatch("/Admin/Settings", true) || IsPathMatch("/Admin/AuditLogs", true) || IsPathMatch("/Admin/Roles", true);
+        var customerActive   = IsPathMatch("/Customer", true);
+        var driverActive     = IsPathMatch("/Driver", true);
+        var staffActive      = IsPathMatch("/Staff", true);
+    }
+
+    <div class="app-shell">
+        @if (isSignedIn)
+        {
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <aside class="sidebar" id="mainSidebar">
+            <div class="sidebar-brand">
+                <a class="brand" asp-page="/Index">
+                    <img src="~/images/logo.svg" alt="e-Dhaq" class="brand-logo" />
+                    <div class="brand-text">
+                        <div class="brand-name">e-Dhaq</div>
+                        <small class="brand-tagline">Laundry Platform</small>
+                    </div>
+                </a>
+            </div>
+
+            <nav class="role-nav" id="sideNav">
+
+                <!-- Home -->
+                <a class="nav-link nav-link-flat @ActiveClass("/", false)" asp-page="/Index">
+                    <span class="nav-icon"><i class="bi bi-house-door-fill"></i></span>
+                    <span class="nav-text">Home</span>
+                </a>
+
+                @if (canSeeCustomer)
+                {
+                    <!-- CUSTOMER GROUP -->
+                    <div class="nav-group @(customerActive ? "open" : "")">
+                        <button class="nav-group-toggle" data-target="grp-customer" type="button">
+                            <span class="nav-group-icon"><i class="bi bi-person-circle"></i></span>
+                            <span class="nav-group-label">Customer</span>
+                            <i class="bi bi-chevron-right nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items @(customerActive ? "show" : "")" id="grp-customer">
+                            <a class="nav-link @ActiveClass("/Customer")" asp-page="/Customer/Index">
+                                <span class="nav-icon"><i class="bi bi-grid-1x2"></i></span><span class="nav-text">Dashboard</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Customer/Orders", true)" asp-page="/Customer/Orders/Index">
+                                <span class="nav-icon"><i class="bi bi-receipt-cutoff"></i></span><span class="nav-text">My Orders</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Customer/Addresses", true)" asp-page="/Customer/Addresses/Index">
+                                <span class="nav-icon"><i class="bi bi-geo-alt"></i></span><span class="nav-text">Addresses</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Customer/Payments", true)" asp-page="/Customer/Payments/Index">
+                                <span class="nav-icon"><i class="bi bi-credit-card-2-front"></i></span><span class="nav-text">Payments</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Customer/Notifications", true)" asp-page="/Customer/Notifications/Index">
+                                <span class="nav-icon"><i class="bi bi-bell"></i></span><span class="nav-text">Notifications</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                @if (canSeeAdmin)
+                {
+                    <!-- ADMIN SECTION -->
+                    <div class="nav-section-label">Administration</div>
+
+                    <div class="nav-group @(adminOpsActive ? "open" : "")">
+                        <button class="nav-group-toggle" data-target="grp-operations" type="button">
+                            <span class="nav-group-icon"><i class="bi bi-speedometer2"></i></span>
+                            <span class="nav-group-label">Operations</span>
+                            <i class="bi bi-chevron-right nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items @(adminOpsActive ? "show" : "")" id="grp-operations">
+                            <a class="nav-link @ActiveClass("/Admin")" asp-page="/Admin/Index">
+                                <span class="nav-icon"><i class="bi bi-bar-chart-line"></i></span><span class="nav-text">Dashboard</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Orders", true)" asp-page="/Admin/Orders/Index">
+                                <span class="nav-icon"><i class="bi bi-list-check"></i></span><span class="nav-text">Manage Orders</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Payments", true)" asp-page="/Admin/Payments/Index">
+                                <span class="nav-icon"><i class="bi bi-wallet2"></i></span><span class="nav-text">Payments</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Reports", true)" asp-page="/Admin/Reports/Index">
+                                <span class="nav-icon"><i class="bi bi-file-earmark-bar-graph"></i></span><span class="nav-text">Reports</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Users", true)" asp-page="/Admin/Users/Index">
+                                <span class="nav-icon"><i class="bi bi-people"></i></span><span class="nav-text">Users</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="nav-group @(adminSetupActive ? "open" : "")">
+                        <button class="nav-group-toggle" data-target="grp-config" type="button">
+                            <span class="nav-group-icon"><i class="bi bi-sliders2"></i></span>
+                            <span class="nav-group-label">Configuration</span>
+                            <i class="bi bi-chevron-right nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items @(adminSetupActive ? "show" : "")" id="grp-config">
+                            <a class="nav-link @ActiveClass("/Admin/Services", true)" asp-page="/Admin/Services/Index">
+                                <span class="nav-icon"><i class="bi bi-tags"></i></span><span class="nav-text">Services</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Coupons", true)" asp-page="/Admin/Coupons/Index">
+                                <span class="nav-icon"><i class="bi bi-ticket-perforated"></i></span><span class="nav-text">Coupons</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Cities", true)" asp-page="/Admin/Cities/Index">
+                                <span class="nav-icon"><i class="bi bi-pin-map"></i></span><span class="nav-text">Cities</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Settings", true)" asp-page="/Admin/Settings/Index">
+                                <span class="nav-icon"><i class="bi bi-gear"></i></span><span class="nav-text">Settings</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/AuditLogs", true)" asp-page="/Admin/AuditLogs/Index">
+                                <span class="nav-icon"><i class="bi bi-shield-check"></i></span><span class="nav-text">Audit Logs</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Admin/Roles", true)" asp-page="/Admin/Roles/Index">
+                                <span class="nav-icon"><i class="bi bi-person-gear"></i></span><span class="nav-text">Roles</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                @if (canSeeFinance)
+                {
+                    <!-- FINANCE SECTION -->
+                    <div class="nav-section-label">Finance</div>
+                    <a class="nav-link nav-link-flat @ActiveClass("/Finance", true)" asp-page="/Finance/Index">
+                        <span class="nav-icon"><i class="bi bi-cash-coin"></i></span>
+                        <span class="nav-text">Finance Portal</span>
+                    </a>
+                    @if (canSeeCashier)
+                    {
+                        <a class="nav-link nav-link-flat @ActiveClass("/Cashier", true)" asp-page="/Cashier/Payments/Index">
+                            <span class="nav-icon"><i class="bi bi-cash-register"></i></span>
+                            <span class="nav-text">Payment Desk</span>
+                        </a>
+                    }
+                }
+
+                @if (canSeeDriver)
+                {
+                    <!-- DRIVER GROUP -->
+                    <div class="nav-section-label">Driver</div>
+                    <div class="nav-group @(driverActive ? "open" : "")">
+                        <button class="nav-group-toggle" data-target="grp-driver" type="button">
+                            <span class="nav-group-icon"><i class="bi bi-truck"></i></span>
+                            <span class="nav-group-label">Driver Portal</span>
+                            <i class="bi bi-chevron-right nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items @(driverActive ? "show" : "")" id="grp-driver">
+                            <a class="nav-link @ActiveClass("/Driver")" asp-page="/Driver/Index">
+                                <span class="nav-icon"><i class="bi bi-grid-1x2"></i></span><span class="nav-text">Dashboard</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Driver/Assignments", true)" asp-page="/Driver/Assignments/Index">
+                                <span class="nav-icon"><i class="bi bi-sign-turn-right"></i></span><span class="nav-text">Assignments</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Driver/Earnings", true)" asp-page="/Driver/Earnings/Index">
+                                <span class="nav-icon"><i class="bi bi-cash-stack"></i></span><span class="nav-text">Earnings</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                @if (canSeeStaff)
+                {
+                    <!-- STAFF GROUP -->
+                    <div class="nav-section-label">Laundry Staff</div>
+                    <div class="nav-group @(staffActive ? "open" : "")">
+                        <button class="nav-group-toggle" data-target="grp-staff" type="button">
+                            <span class="nav-group-icon"><i class="bi bi-basket2-fill"></i></span>
+                            <span class="nav-group-label">Staff Portal</span>
+                            <i class="bi bi-chevron-right nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items @(staffActive ? "show" : "")" id="grp-staff">
+                            <a class="nav-link @ActiveClass("/Staff")" asp-page="/Staff/Index">
+                                <span class="nav-icon"><i class="bi bi-grid-1x2"></i></span><span class="nav-text">Dashboard</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Staff/Orders", true)" asp-page="/Staff/Orders/Process">
+                                <span class="nav-icon"><i class="bi bi-arrow-repeat"></i></span><span class="nav-text">Intake & Processing</span>
+                            </a>
+                            <a class="nav-link @ActiveClass("/Staff/Board", true)" asp-page="/Staff/Board/Index">
+                                <span class="nav-icon"><i class="bi bi-columns-gap"></i></span><span class="nav-text">Kanban Board</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar"><i class="bi bi-person-fill"></i></div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">@(User?.Identity?.Name ?? "User")</div>
+                        <div class="sidebar-user-role">
+                            @if (isAdmin) { <text>Administrator</text> }
+                            else if (isManager) { <text>Manager</text> }
+                            else if (isCustomer) { <text>Customer</text> }
+                            else if (isCashier) { <text>Cashier</text> }
+                            else if (isLaundryStaff) { <text>Laundry Staff</text> }
+                            else if (isPickupDriver || isDeliveryDriver) { <text>Driver</text> }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        }
+
+        <div class="app-content">
+            <header class="top-nav @(isSignedIn ? string.Empty : "top-nav-public")">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="d-flex align-items-center gap-3">
+                        @if (isSignedIn)
+                        {
+                            <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()" type="button" aria-label="Toggle menu">
+                                <i class="bi bi-list"></i>
+                            </button>
+                        }
+                        <div>
+                            <h1 class="top-title mb-0">@ViewData["Title"]</h1>
+                            @if (!isSignedIn)
+                            {
+                                <nav class="public-nav mt-1 d-flex flex-wrap gap-3">
+                                    <a asp-page="/Index">Home</a>
+                                    <a asp-page="/Index" asp-fragment="how-it-works">How It Works</a>
+                                    <a asp-page="/Index" asp-fragment="features">Features</a>
+                                    <a asp-page="/Privacy">Privacy</a>
+                                </nav>
+                            }
+                        </div>
+                    </div>
+                    <partial name="_LoginPartial" />
+                </div>
+            </header>
+
+            <main role="main" class="main-content">
+                @if (TempData["SuccessMessage"] is string successMessage)
+                {
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>@successMessage</div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] is string errorMessage)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <div>@errorMessage</div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @RenderBody()
+            </main>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <span>&copy; 2026 <strong>e-Dhaq</strong> &mdash; Online Laundry Ordering & Delivery System</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        document.querySelectorAll('.nav-group-toggle').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var group = btn.closest('.nav-group');
+                var targetId = btn.getAttribute('data-target');
+                var items = document.getElementById(targetId);
+                var isOpen = group.classList.contains('open');
+                group.classList.toggle('open', !isOpen);
+                items.classList.toggle('show', !isOpen);
+            });
+        });
+        function toggleSidebar() {
+            document.getElementById('mainSidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('show');
+        }
+        function closeSidebar() {
+            document.getElementById('mainSidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('show');
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

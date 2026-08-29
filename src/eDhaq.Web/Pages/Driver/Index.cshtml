@@ -1,0 +1,105 @@
+@page
+@model eDhaq.Web.Pages.Driver.IndexModel
+@{
+    ViewData["Title"] = "Driver Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Driver Dashboard</h2>
+        <p class="text-muted mb-0">Accept jobs, update location, and complete deliveries.</p>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <span>Active Assignments</span>
+            <h4>@Model.ActiveAssignments</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <span>Pickup Tasks</span>
+            <h4>@Model.ActivePickupAssignments</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <span>Delivery Tasks</span>
+            <h4>@Model.ActiveDeliveryAssignments</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Live Tracking</h5>
+                <p class="text-muted mb-0">Google Maps live tracking panel will render here once API key is configured.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title mb-0">Current Tasks</h5>
+            <a class="btn btn-sm btn-outline-dark" asp-page="/Driver/Assignments/Index">Open Full Assignments</a>
+        </div>
+
+        @if (Model.CurrentTasks.Count == 0)
+        {
+            <p class="text-muted mb-0">No active pickup or delivery tasks assigned yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Assigned</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in Model.CurrentTasks)
+                        {
+                            <tr>
+                                <td>@task.Order.OrderNumber</td>
+                                <td>@task.Order.Customer.User.FirstName @task.Order.Customer.User.LastName</td>
+                                <td>
+                                    <span class="badge @(task.IsPickup ? "text-bg-primary" : "text-bg-success")">
+                                        @(task.IsPickup ? "Pickup" : "Delivery")
+                                    </span>
+                                </td>
+                                <td>@task.Status</td>
+                                <td>@task.AssignedAt.ToString("dd MMM HH:mm")</td>
+                                <td class="d-flex gap-1 flex-wrap">
+                                    @if (Model.CanStartTrip(task))
+                                    {
+                                        <form method="post" asp-page-handler="StartTrip" class="m-0">
+                                            <input type="hidden" name="assignmentId" value="@task.Id" />
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">On The Way</button>
+                                        </form>
+                                    }
+                                    @if (Model.CanCompleteTask(task))
+                                    {
+                                        <form method="post" asp-page-handler="CompleteTask" class="m-0">
+                                            <input type="hidden" name="assignmentId" value="@task.Id" />
+                                            <button class="btn btn-sm btn-edhaq" type="submit">@Model.GetCompleteLabel(task)</button>
+                                        </form>
+                                    }
+                                    <a class="btn btn-sm btn-outline-dark" asp-page="/Driver/Assignments/Index" asp-route-Search="@task.Order.OrderNumber">Details</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

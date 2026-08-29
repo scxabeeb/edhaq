@@ -1,0 +1,95 @@
+@page
+@model eDhaq.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Admin Dashboard</h2>
+        <p class="text-muted mb-0">Operational overview for e-Dhaq.</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="metric-card"><span>Today's Revenue</span><h4>@Model.Dashboard.TodaysRevenue.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Today's Orders</span><h4>@Model.Dashboard.TodaysOrders</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Pending Orders</span><h4>@Model.Dashboard.PendingOrders</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Completed</span><h4>@Model.Dashboard.CompletedOrders</h4></div></div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <h5 class="card-title">Order Status Snapshot</h5>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            @foreach (var item in Model.Dashboard.OrdersByStatus)
+            {
+                <span class="badge text-bg-light p-2">@item.Key: @item.Value</span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title">Weekly Revenue</h5>
+                <canvas id="weeklyRevenueChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title">Order Distribution</h5>
+                <canvas id="statusChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+    fetch('/Admin/DashboardApi/Revenue', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            const weeklyCtx = document.getElementById('weeklyRevenueChart');
+            if (weeklyCtx) {
+                new Chart(weeklyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.weekly.map(x => x.label),
+                        datasets: [{
+                            label: 'Revenue',
+                            data: data.weekly.map(x => x.value),
+                            borderColor: '#D71920',
+                            backgroundColor: 'rgba(215,25,32,.15)',
+                            fill: true,
+                            tension: .35
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            }
+
+            const statusCtx = document.getElementById('statusChart');
+            if (statusCtx) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.statuses.map(x => x.status),
+                        datasets: [{
+                            data: data.statuses.map(x => x.count),
+                            backgroundColor: ['#D71920', '#2D6CDF', '#14A44D', '#F59E0B', '#6B7280', '#9333EA']
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            }
+        });
+})();
+</script>
+}

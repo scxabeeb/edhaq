@@ -1,0 +1,194 @@
+@page
+@model eDhaq.Web.Pages.Admin.Roles.IndexModel
+@{
+    ViewData["Title"] = "Role Management";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="page-title mb-1">Role Management</h2>
+        <p class="text-muted mb-0">Create, manage user roles, and review page-level permission assignments.</p>
+    </div>
+    <button class="btn btn-edhaq d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+        <i class="bi bi-shield-lock-fill"></i> Create Role
+    </button>
+</div>
+
+<!-- ── Create Role Modal ── -->
+<div class="modal fade" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="CreateRole">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="createRoleModalLabel">
+                        <i class="bi bi-plus-circle text-primary me-2"></i>Create New Role
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role Name <span class="text-danger">*</span></label>
+                        <input name="NewRoleName" type="text" class="form-control" placeholder="e.g. Billing Specialist" required minlength="3" maxlength="50" />
+                        <div class="form-text">Must be at least 3 characters. Only letters, numbers, spaces, dots, hyphens, and underscores are allowed.</div>
+                    </div>
+                    <p class="small text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Page-level permissions for this role must be configured by updating the
+                        <code>[Authorize(Roles = "...")]</code> attributes on the relevant Razor Pages.
+                        See the permission matrix below for the current mapping.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-edhaq"><i class="bi bi-check2 me-1"></i> Create Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── Roles Table ── -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Existing Roles</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Role Name</th>
+                        <th class="text-end">Users</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var role in Model.RoleRows)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@role.Name</td>
+                            <td class="text-end">@role.UserCount</td>
+                            <td>
+                                @if (role.IsProtected)
+                                {
+                                    <span class="badge text-bg-secondary"><i class="bi bi-shield-check"></i> System</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-success"><i class="bi bi-plus-circle"></i> Custom</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (role.IsProtected)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" disabled title="System roles cannot be deleted">
+                                        <i class="bi bi-shield-lock"></i>
+                                    </button>
+                                }
+                                else if (role.UserCount > 0)
+                                {
+                                    <button class="btn btn-sm btn-outline-warning" disabled title="Cannot delete — users assigned">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteRoleModal"
+                                            data-roleid="@role.Id"
+                                            data-rolename="@role.Name">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Delete Role Modal ── -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-labelledby="deleteRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="DeleteRole">
+                <input type="hidden" name="roleId" id="deleteRoleId" />
+                <div class="modal-body text-center py-4">
+                    <div class="text-danger mb-3" style="font-size: 2.5rem"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <h5 class="fw-bold mb-1">Delete Role?</h5>
+                    <p class="text-muted mb-0">Role: <strong id="deleteRoleName"></strong></p>
+                    <p class="text-muted mt-1 small">This action cannot be undone. The role will be permanently removed.</p>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash3 me-1"></i> Delete Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── Page Permissions Matrix ── -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Page Permission Matrix</h5>
+        <p class="text-muted small mb-3">
+            This matrix shows which roles currently have access to each page area. Permissions are enforced
+            via <code>[Authorize(Roles = "...")]</code> attributes and folder-level conventions in
+            <code>Program.cs</code>.
+        </p>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Page Area</th>
+                        <th>Path</th>
+                        <th>Description</th>
+                        <th>Allowed Roles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.PagePermissions)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@p.Name</td>
+                            <td class="text-muted small"><code>@p.Path</code></td>
+                            <td class="text-muted small">@p.Description</td>
+                            <td>
+                                @foreach (var role in p.AllowedRoles)
+                                {
+                                    var roleColor = role switch
+                                    {
+                                        "Administrator" => "danger",
+                                        "Manager" => "warning",
+                                        "Cashier" => "info",
+                                        "LaundryStaff" => "primary",
+                                        "PickupDriver" => "success",
+                                        "DeliveryDriver" => "success",
+                                        "Customer" => "secondary",
+                                        _ => "secondary"
+                                    };
+                                    <span class="badge text-bg-@roleColor">@role</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Delete role modal — populate fields
+    var deleteModal = document.getElementById('deleteRoleModal');
+    deleteModal.addEventListener('show.bs.modal', function(e) {
+        var btn = e.relatedTarget;
+        document.getElementById('deleteRoleId').value = btn.dataset.roleid;
+        document.getElementById('deleteRoleName').textContent = btn.dataset.rolename;
+    });
+</script>
+}

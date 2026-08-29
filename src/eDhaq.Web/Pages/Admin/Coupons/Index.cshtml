@@ -1,0 +1,46 @@
+@page
+@model eDhaq.Web.Pages.Admin.Coupons.IndexModel
+@{
+    ViewData["Title"] = "Coupon Management";
+}
+
+<h2 class="page-title mb-3">Coupons</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-2"><input asp-for="Input.Code" class="form-control" placeholder="Code" /></div>
+            <div class="col-md-3"><input asp-for="Input.Description" class="form-control" placeholder="Description" /></div>
+            <div class="col-md-2"><input asp-for="Input.Value" class="form-control" placeholder="Value" /></div>
+            <div class="col-md-2"><input asp-for="Input.MinimumOrderAmount" class="form-control" placeholder="Min Order" /></div>
+            <div class="col-md-1"><input asp-for="Input.IsPercentage" class="form-check-input mt-2" title="Is %" /></div>
+            <div class="col-md-1"><input asp-for="Input.ValidTo" type="date" class="form-control" /></div>
+            <div class="col-md-1 d-grid"><button class="btn btn-edhaq" type="submit">Add</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Code</th><th>Value</th><th>Valid To</th><th>Usage</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model.Coupons)
+            {
+                <tr>
+                    <td>@c.Code</td>
+                    <td>@(c.IsPercentage ? $"{c.Value}%" : c.Value.ToString("C"))</td>
+                    <td>@c.ValidTo.ToString("dd MMM yyyy")</td>
+                    <td>@c.UsageCount</td>
+                    <td>@(c.IsActive ? "Active" : "Disabled")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Toggle" asp-route-id="@c.Id">
+                            <button class="btn btn-sm btn-outline-dark" type="submit">Toggle</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

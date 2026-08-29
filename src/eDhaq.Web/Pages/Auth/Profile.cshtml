@@ -1,0 +1,151 @@
+@page
+@model eDhaq.Web.Pages.Auth.ProfileModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-3">
+                    <img src="~/images/logo.svg" alt="e-Dhaq" style="height:70px; width:70px; object-fit:contain;" />
+                </div>
+                <h3 class="mb-3">Profile</h3>
+                <form method="post" class="row g-3">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.FirstName" class="form-label"></label>
+                        <input asp-for="Input.FirstName" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.LastName" class="form-label"></label>
+                        <input asp-for="Input.LastName" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                        <input asp-for="Input.PhoneNumber" class="form-control" />
+                    </div>
+                    <div class="col-12"><hr /></div>
+                    <div class="col-12">
+                        <h5 class="mb-2">Address</h5>
+                        <p class="text-muted mb-0">This address is used as your default contact location.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.AddressLabel" class="form-label"></label>
+                        <input asp-for="Input.AddressLabel" class="form-control" />
+                    </div>
+                    <div class="col-md-8">
+                        <label asp-for="Input.Street" class="form-label"></label>
+                        <input asp-for="Input.Street" class="form-control" placeholder="Street / Landmark" />
+                        <span asp-validation-for="Input.Street" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.District" class="form-label"></label>
+                        <input asp-for="Input.District" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.CityId" class="form-label">City</label>
+                        <select asp-for="Input.CityId" id="citySelect" class="form-select" asp-items="Model.CityOptions"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.VillageId" class="form-label">Village</label>
+                        <select asp-for="Input.VillageId" id="villageSelect" class="form-select" asp-items="Model.VillageOptions"></select>
+                        <span asp-validation-for="Input.VillageId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.SubVillageId" class="form-label">Sub Village</label>
+                        <select asp-for="Input.SubVillageId" id="subVillageSelect" class="form-select" asp-items="Model.SubVillageOptions">
+                            <option value="">Sub village (optional)</option>
+                        </select>
+                        <span asp-validation-for="Input.SubVillageId" class="text-danger"></span>
+                    </div>
+                    <div class="col-12"><hr /></div>
+                    <div class="col-12"><h5 class="mb-2">Change Password</h5></div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.CurrentPassword" class="form-label"></label>
+                        <input asp-for="Input.CurrentPassword" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.NewPassword" class="form-label"></label>
+                        <input asp-for="Input.NewPassword" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                        <input asp-for="Input.ConfirmPassword" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-edhaq" type="submit">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const citySelect = document.getElementById('citySelect');
+            const villageSelect = document.getElementById('villageSelect');
+            const subVillageSelect = document.getElementById('subVillageSelect');
+
+            if (!citySelect || !villageSelect || !subVillageSelect) {
+                return;
+            }
+
+            const fillSelect = (select, items, includeOptional) => {
+                const current = select.value;
+                select.innerHTML = '';
+
+                if (includeOptional) {
+                    const empty = document.createElement('option');
+                    empty.value = '';
+                    empty.textContent = 'Sub village (optional)';
+                    select.appendChild(empty);
+                }
+
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    select.appendChild(option);
+                });
+
+                if (current && [...select.options].some(o => o.value === current)) {
+                    select.value = current;
+                }
+            };
+
+            const loadVillages = async () => {
+                const cityId = citySelect.value;
+                if (!cityId) {
+                    fillSelect(villageSelect, [], false);
+                    fillSelect(subVillageSelect, [], true);
+                    return;
+                }
+
+                const res = await fetch(`?handler=Villages&cityId=${cityId}`);
+                const villages = await res.json();
+                fillSelect(villageSelect, villages, false);
+                await loadSubVillages();
+            };
+
+            const loadSubVillages = async () => {
+                const villageId = villageSelect.value;
+                if (!villageId) {
+                    fillSelect(subVillageSelect, [], true);
+                    return;
+                }
+
+                const res = await fetch(`?handler=SubVillages&villageId=${villageId}`);
+                const subs = await res.json();
+                fillSelect(subVillageSelect, subs, true);
+            };
+
+            citySelect.addEventListener('change', loadVillages);
+            villageSelect.addEventListener('change', loadSubVillages);
+        })();
+    </script>
+}

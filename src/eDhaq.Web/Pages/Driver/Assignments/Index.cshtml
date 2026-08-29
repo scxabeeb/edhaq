@@ -1,0 +1,158 @@
+@page
+@model eDhaq.Web.Pages.Driver.Assignments.IndexModel
+@{
+    ViewData["Title"] = "Driver - Assignments";
+}
+
+<h2 class="page-title mb-3">Assigned Jobs</h2>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2">
+            <div class="col-md-5">
+                <input asp-for="Search" class="form-control" placeholder="Search order/customer/email" />
+            </div>
+            <div class="col-md-3">
+                <select asp-for="StatusFilter" class="form-select" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.DriverJobAction>()">
+                    <option value="">All Job Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select asp-for="IsPickupFilter" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="true">Pickup</option>
+                    <option value="false">Delivery</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-outline-dark" type="submit">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Order Stage</th>
+                    <th>Proof</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var a in Model.Assignments)
+                {
+                    <tr>
+                        <td>@a.Order.OrderNumber</td>
+                        <td>@a.Order.Customer.User.FirstName @a.Order.Customer.User.LastName</td>
+                        <td>@(a.IsPickup ? "Pickup" : "Delivery")</td>
+                        <td>@a.Status</td>
+                        <td>@a.Order.Status</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(a.DeliveryPhotoUrl))
+                            {
+                                <a href="@a.DeliveryPhotoUrl" target="_blank">View</a>
+                            }
+                        </td>
+                        <td class="d-flex gap-1 flex-wrap">
+                            <form method="post" asp-page-handler="Accept">
+                                <input type="hidden" name="AssignmentId" value="@a.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="IsPickupFilter" value="@Model.IsPickupFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <button class="btn btn-sm btn-outline-success" type="submit">Accept</button>
+                            </form>
+                            @if (Model.CanStartTrip(a))
+                            {
+                                <form method="post" asp-page-handler="StartTrip">
+                                    <input type="hidden" name="AssignmentId" value="@a.Id" />
+                                    <input type="hidden" name="Search" value="@Model.Search" />
+                                    <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                    <input type="hidden" name="IsPickupFilter" value="@Model.IsPickupFilter" />
+                                    <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                    <button class="btn btn-sm btn-outline-primary" type="submit">On The Way</button>
+                                </form>
+                            }
+                            <form method="post" asp-page-handler="Reject">
+                                <input type="hidden" name="AssignmentId" value="@a.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="IsPickupFilter" value="@Model.IsPickupFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                            </form>
+                            <form method="post" asp-page-handler="Complete" enctype="multipart/form-data" class="d-flex gap-1">
+                                <input type="hidden" name="AssignmentId" value="@a.Id" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                <input type="hidden" name="IsPickupFilter" value="@Model.IsPickupFilter" />
+                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                @if (!a.IsPickup)
+                                {
+                                    <input type="file" name="DeliveryPhoto" class="form-control form-control-sm" accept="image/*" />
+                                }
+                                <button class="btn btn-sm btn-edhaq" type="submit">@Model.GetCompletionLabel(a)</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@{
+    var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+}
+
+@if (totalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination">
+            @for (var p = 1; p <= totalPages; p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : null)">
+                    <a class="page-link"
+                       asp-page="./Index"
+                       asp-route-PageNumber="@p"
+                       asp-route-Search="@Model.Search"
+                       asp-route-StatusFilter="@Model.StatusFilter"
+                       asp-route-IsPickupFilter="@Model.IsPickupFilter">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+
+@section Scripts {
+<script>
+(() => {
+    const orderInput = document.querySelector('input[name="AssignmentId"]');
+    const orderNumberCell = document.querySelector('tbody tr td');
+    if (!navigator.geolocation || !orderNumberCell) return;
+
+    const orderNumber = orderNumberCell.textContent.trim();
+
+    navigator.geolocation.getCurrentPosition((position) => {
+        fetch('/Driver/Location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                orderNumber: orderNumber
+            })
+        }).catch(() => { });
+    });
+})();
+</script>
+}

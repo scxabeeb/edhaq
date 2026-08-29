@@ -1,0 +1,45 @@
+@page
+@model eDhaq.Web.Pages.Customer.Orders.IndexModel
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title mb-0">My Orders</h2>
+    <a class="btn btn-edhaq" asp-page="Create">New Order</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Order Number</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Orders)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-page="Track" asp-route-orderId="@item.Id">@item.OrderNumber</a>
+                            </td>
+                            <td>@item.Status</td>
+                            <td>@item.TotalAmount.ToString("C")</td>
+                            <td>@item.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td class="d-flex gap-1">
+                                <a class="btn btn-sm btn-outline-dark" asp-page="Invoice" asp-route-orderId="@item.Id">Invoice</a>
+                                <a class="btn btn-sm btn-outline-primary" asp-page="/Customer/Payments/Index" asp-route-orderId="@item.Id">Pay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

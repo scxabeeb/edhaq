@@ -1,0 +1,227 @@
+@page
+@model eDhaq.Web.Pages.Finance.IndexModel
+@using eDhaq.Models.Enums
+@{
+    ViewData["Title"] = "Finance Portal";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Finance Portal</h2>
+        <p class="text-muted mb-0">Financial overview, revenue tracking, and payment management.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-page="/Finance/Index">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+    </a>
+</div>
+
+<!-- Date Range Filter -->
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold">From</label>
+        <input asp-for="From" type="date" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold">To</label>
+        <input asp-for="To" type="date" class="form-control" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-dark w-100" type="submit">Apply</button>
+    </div>
+</form>
+
+<!-- Summary Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="metric-card"><span>Total Revenue</span><h4>@Model.TotalRevenue.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Today's Revenue</span><h4>@Model.TodaysRevenue.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Pending Payments</span><h4 class="text-warning">@Model.PendingPaymentsTotal.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Total Wallet Balance</span><h4 class="text-info">@Model.TotalWalletBalance.ToString("C")</h4></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="metric-card"><span>Paid Total</span><h4 class="text-success">@Model.PaidTotal.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Refunded Total</span><h4 class="text-danger">@Model.RefundedTotal.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Paid Transactions</span><h4 class="text-success">@Model.PaidOrdersCount</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Pending Transactions</span><h4 class="text-warning">@Model.PendingOrdersCount</h4></div></div>
+</div>
+
+<!-- Payment Method Breakdown -->
+@if (Model.RevenueByPaymentMethod.Any())
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Revenue by Payment Method</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Payment Method</th><th class="text-end">Amount</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kvp in Model.RevenueByPaymentMethod.OrderByDescending(x => x.Value))
+                        {
+                            <tr>
+                                <td>@kvp.Key</td>
+                                <td class="text-end fw-semibold">@kvp.Value.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Status Distribution -->
+@if (Model.PaymentsByStatus.Any())
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Payment Status Distribution</h5>
+            <div class="d-flex flex-wrap gap-2">
+                @{
+                    var statusColors = new Dictionary<PaymentStatus, string>
+                    {
+                        [PaymentStatus.Paid] = "success",
+                        [PaymentStatus.Pending] = "warning",
+                        [PaymentStatus.Failed] = "danger",
+                        [PaymentStatus.Refunded] = "info",
+                    };
+                }
+                @foreach (var kvp in Model.PaymentsByStatus)
+                {
+                    var color = statusColors.TryGetValue(kvp.Key, out var c) ? c : "secondary";
+                    <span class="badge text-bg-@color p-2">@kvp.Key: @kvp.Value</span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Recent Payments Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Recent Payments (@Model.TotalTransactions total transactions)</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th class="text-end">Amount</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model.RecentPayments)
+                    {
+                        <tr>
+                            <td class="text-muted">#@payment.Id</td>
+                            <td>@payment.Order?.OrderNumber ?? "—"</td>
+                            <td>
+                                @if (payment.Order?.Customer?.User != null)
+                                {
+                                    <text>@payment.Order.Customer.User.FirstName @payment.Order.Customer.User.LastName</text>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">—</span>
+                                }
+                            </td>
+                            <td>@payment.Method</td>
+                            <td>
+                                @{
+                                    var badgeColor = payment.Status switch
+                                    {
+                                        PaymentStatus.Paid => "success",
+                                        PaymentStatus.Pending => "warning",
+                                        PaymentStatus.Failed => "danger",
+                                        PaymentStatus.Refunded => "info",
+                                        _ => "secondary"
+                                    };
+                                }
+                                <span class="badge text-bg-@badgeColor">@payment.Status</span>
+                            </td>
+                            <td class="text-end fw-semibold">@payment.Amount.ToString("C")</td>
+                            <td class="text-muted small">@payment.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td class="text-end">
+                                @if (payment.Status == PaymentStatus.Pending)
+                                {
+                                    <form method="post" asp-page-handler="ClearPayment" class="d-inline">
+                                        <input type="hidden" name="paymentId" value="@payment.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as Paid">
+                                            <i class="bi bi-cash-coin"></i>
+                                        </button>
+                                    </form>
+                                }
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#statusModal"
+                                        data-paymentid="@payment.Id"
+                                        data-order="@(payment.Order?.OrderNumber ?? "")"
+                                        data-status="@payment.Status"
+                                        title="Update Status">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.RecentPayments.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">No payment transactions found.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="UpdateStatus">
+                <input type="hidden" name="PaymentId" id="modalPaymentId" />
+                <input type="hidden" name="From" value="@Model.From?.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="To" value="@Model.To?.ToString("yyyy-MM-dd")" />
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="statusModalLabel">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Update Payment Status
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-2">Order: <strong id="modalOrderNumber"></strong></p>
+                    <p class="text-muted mb-3">Current Status: <strong id="modalCurrentStatus"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">New Status</label>
+                        <select name="NewStatus" class="form-select" asp-items="Html.GetEnumSelectList<PaymentStatus>()" required></select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Note (optional)</label>
+                        <input name="Note" type="text" class="form-control" placeholder="e.g. Payment confirmed via USSD" maxlength="500" />
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-edhaq"><i class="bi bi-check2 me-1"></i> Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var statusModal = document.getElementById('statusModal');
+    statusModal.addEventListener('show.bs.modal', function(e) {
+        var btn = e.relatedTarget;
+        document.getElementById('modalPaymentId').value = btn.dataset.paymentid;
+        document.getElementById('modalOrderNumber').textContent = btn.dataset.order;
+        document.getElementById('modalCurrentStatus').textContent = btn.dataset.status;
+    });
+</script>
+}

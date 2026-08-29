@@ -1,0 +1,254 @@
+@page
+@model eDhaq.Web.Pages.Customer.Orders.TrackModel
+@{
+    ViewData["Title"] = "Track Order";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Tracking - @Model.OrderNumber</h2>
+    <div class="d-flex align-items-center gap-2">
+        <span id="liveStatus" class="badge text-bg-danger">@Model.CurrentStatusLabel</span>
+        @if (Model.CanConfirmDelivery)
+        {
+            <form method="post" asp-page-handler="Confirm" class="m-0">
+                <input type="hidden" name="orderId" value="@Model.OrderId" />
+                <button type="submit" class="btn btn-sm btn-edhaq">Confirm Delivery</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Tracking Status</h5>
+        <div id="orderProgress" class="order-progress">
+            @for (var i = 0; i < Model.ProgressSteps.Count; i++)
+            {
+                var step = Model.ProgressSteps[i];
+                var stateClass = i < Model.CurrentStepIndex
+                    ? "completed"
+                    : i == Model.CurrentStepIndex
+                        ? "active"
+                        : "pending";
+
+                <div class="progress-step @stateClass" data-status-code="@step.Code">
+                    <div class="step-dot"></div>
+                    <div class="step-label">@step.Label</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.PickupDriver is not null || Model.DeliveryDriver is not null)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Assigned Driver Details</h5>
+            <div class="row g-3">
+                @if (Model.PickupDriver is not null)
+                {
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="small text-muted mb-1">Pickup Driver</div>
+                            <div class="fw-semibold">@Model.PickupDriver.FullName</div>
+                            <div class="small">Status: @Model.PickupDriver.AssignmentStatus</div>
+                            <div class="small">Phone: @(string.IsNullOrWhiteSpace(Model.PickupDriver.PhoneNumber) ? "N/A" : Model.PickupDriver.PhoneNumber)</div>
+                            <div class="small">Vehicle: @(string.IsNullOrWhiteSpace(Model.PickupDriver.VehicleModel) ? "N/A" : Model.PickupDriver.VehicleModel)</div>
+                            <div class="small">Plate: @(string.IsNullOrWhiteSpace(Model.PickupDriver.LicensePlate) ? "N/A" : Model.PickupDriver.LicensePlate)</div>
+                        </div>
+                    </div>
+                }
+                @if (Model.DeliveryDriver is not null)
+                {
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="small text-muted mb-1">Delivery Driver</div>
+                            <div class="fw-semibold">@Model.DeliveryDriver.FullName</div>
+                            <div class="small">Status: @Model.DeliveryDriver.AssignmentStatus</div>
+                            <div class="small">Phone: @(string.IsNullOrWhiteSpace(Model.DeliveryDriver.PhoneNumber) ? "N/A" : Model.DeliveryDriver.PhoneNumber)</div>
+                            <div class="small">Vehicle: @(string.IsNullOrWhiteSpace(Model.DeliveryDriver.VehicleModel) ? "N/A" : Model.DeliveryDriver.VehicleModel)</div>
+                            <div class="small">Plate: @(string.IsNullOrWhiteSpace(Model.DeliveryDriver.LicensePlate) ? "N/A" : Model.DeliveryDriver.LicensePlate)</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Timeline</h5>
+                <ul id="timeline" class="list-group list-group-flush">
+                    @foreach (var item in Model.Timeline)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <strong>@item.StatusLabel</strong>
+                                <div class="text-muted small">@item.Note</div>
+                            </div>
+                            <small>@item.CreatedAt.ToString("dd MMM yyyy HH:mm")</small>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Live Map</h5>
+                @if (string.IsNullOrWhiteSpace(Model.GoogleMapsApiKey))
+                {
+                    <p class="text-muted">Google Maps API key is not configured. Showing GPS coordinates instead.</p>
+                }
+                else
+                {
+                    <p class="text-muted">Live driver location updates on map.</p>
+                }
+                <div id="map" style="height:220px;border:1px dashed #d0d5dd;border-radius:.75rem;"></div>
+                <div id="mapMeta" class="small text-muted mt-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+@if (!string.IsNullOrWhiteSpace(Model.GoogleMapsApiKey))
+{
+<script src="https://maps.googleapis.com/maps/api/js?key=@Model.GoogleMapsApiKey"></script>
+}
+<script>
+(() => {
+    const orderNumber = "@Model.OrderNumber";
+    if (!orderNumber) return;
+
+    const progressSteps = document.querySelectorAll('#orderProgress .progress-step');
+    const statusLabelMap = {
+        OrderPlaced: 'Order Placed',
+        PickupScheduled: 'Pickup Scheduled',
+        DriverAssigned: 'Driver Assigned',
+        DriverOnTheWay: 'Driver On The Way',
+        ClothesPickedUp: 'Clothes Picked',
+        LaundryReceived: 'Laundry Received',
+        Sorting: 'Laundry Received',
+        Washing: 'Washing',
+        DryCleaning: 'Washing',
+        Drying: 'Drying',
+        Ironing: 'Ironing',
+        Folding: 'Ironing',
+        Packaging: 'Packing',
+        ReadyForDelivery: 'Ready',
+        OutForDelivery: 'Out For Delivery',
+        Delivered: 'Delivered',
+        CustomerConfirmed: 'Completed',
+        Completed: 'Completed',
+        Cancelled: 'Cancelled'
+    };
+
+    const normalizeStatusCode = (statusCode) => {
+        if (statusCode === 'Sorting') return 'LaundryReceived';
+        if (statusCode === 'DryCleaning') return 'Washing';
+        if (statusCode === 'Folding') return 'Ironing';
+        if (statusCode === 'CustomerConfirmed') return 'Completed';
+        return statusCode;
+    };
+
+    const updateProgress = (statusCode) => {
+        const normalized = normalizeStatusCode(statusCode);
+        const targetIndex = Array.from(progressSteps).findIndex(s => s.dataset.statusCode === normalized);
+        if (targetIndex < 0) return;
+
+        progressSteps.forEach((step, index) => {
+            step.classList.remove('completed', 'active', 'pending');
+            if (index < targetIndex) step.classList.add('completed');
+            else if (index === targetIndex) step.classList.add('active');
+            else step.classList.add('pending');
+        });
+    };
+
+    const hasMapApi = @(!string.IsNullOrWhiteSpace(Model.GoogleMapsApiKey) ? "true" : "false");
+    const mapElement = document.getElementById('map');
+    const mapMeta = document.getElementById('mapMeta');
+
+    let map = null;
+    let marker = null;
+
+    if (hasMapApi && window.google && window.google.maps) {
+        map = new google.maps.Map(mapElement, {
+            zoom: 13,
+            center: { lat: 2.0469, lng: 45.3182 },
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false
+        });
+    }
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl('/hubs/tracking')
+        .withAutomaticReconnect()
+        .build();
+
+    connection.on('orderStatusChanged', (payload) => {
+        if (!payload || payload.orderNumber !== orderNumber) return;
+
+        const badge = document.getElementById('liveStatus');
+        badge.textContent = statusLabelMap[payload.status] || payload.status;
+        updateProgress(payload.status);
+
+        const timeline = document.getElementById('timeline');
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between';
+
+        const left = document.createElement('div');
+        const strong = document.createElement('strong');
+        strong.textContent = statusLabelMap[payload.status] || payload.status;
+        const note = document.createElement('div');
+        note.className = 'text-muted small';
+        note.textContent = payload.note || '';
+        left.appendChild(strong);
+        left.appendChild(note);
+
+        const right = document.createElement('small');
+        right.textContent = new Date(payload.timestamp).toLocaleString();
+
+        li.appendChild(left);
+        li.appendChild(right);
+        timeline.prepend(li);
+    });
+
+    connection.on('driverLocationUpdated', (payload) => {
+        if (!payload || payload.orderNumber !== orderNumber) return;
+
+        const lat = Number(payload.latitude);
+        const lng = Number(payload.longitude);
+        const updated = new Date(payload.updatedAt).toLocaleString();
+
+        mapMeta.textContent = 'GPS: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + ' | Updated: ' + updated;
+
+        if (map) {
+            const position = { lat, lng };
+            if (!marker) {
+                marker = new google.maps.Marker({
+                    position,
+                    map,
+                    title: 'Driver location'
+                });
+            } else {
+                marker.setPosition(position);
+            }
+            map.setCenter(position);
+        } else {
+            mapElement.innerHTML = '<div style="padding:8px">Driver GPS: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '<br/>Updated: ' + updated + '</div>';
+        }
+    });
+
+    connection.start()
+        .then(() => connection.invoke('JoinOrderGroup', orderNumber))
+        .catch(err => console.error(err));
+})();
+</script>
+}

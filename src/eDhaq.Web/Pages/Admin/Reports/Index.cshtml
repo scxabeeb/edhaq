@@ -1,0 +1,43 @@
+@page
+@model eDhaq.Web.Pages.Admin.Reports.IndexModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<h2 class="page-title mb-3">Reports Export</h2>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">From</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">To</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-outline-dark" type="submit">Apply Filter</button>
+            </div>
+        </form>
+
+        <div class="d-flex flex-wrap gap-2">
+            <form method="post" asp-page-handler="ExportPdf">
+                <input type="hidden" asp-for="From" />
+                <input type="hidden" asp-for="To" />
+                <button class="btn btn-edhaq" type="submit">Export PDF</button>
+            </form>
+            <form method="post" asp-page-handler="ExportExcel">
+                <input type="hidden" asp-for="From" />
+                <input type="hidden" asp-for="To" />
+                <button class="btn btn-outline-success" type="submit">Export Excel</button>
+            </form>
+            <form method="post" asp-page-handler="ExportCsv">
+                <input type="hidden" asp-for="From" />
+                <input type="hidden" asp-for="To" />
+                <button class="btn btn-outline-primary" type="submit">Export CSV</button>
+            </form>
+        </div>
+    </div>
+</div>

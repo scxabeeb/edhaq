@@ -1,0 +1,31 @@
+@page
+@model eDhaq.Web.Pages.Staff.IndexModel
+@{
+    ViewData["Title"] = "Laundry Staff Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Laundry Operations</h2>
+        <p class="text-muted mb-0">Manage incoming loads and progress through processing stages.</p>
+    </div>
+</div>
+
+<div class="metric-card mb-4">
+    <span>Incoming Orders Today</span>
+    <h4>@Model.IncomingOrders</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">Workflow Stages</h5>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <span class="badge text-bg-light">Received</span>
+            <span class="badge text-bg-light">Washing</span>
+            <span class="badge text-bg-light">Drying</span>
+            <span class="badge text-bg-light">Ironing</span>
+            <span class="badge text-bg-light">Packaging</span>
+            <span class="badge text-bg-light">Ready</span>
+        </div>
+    </div>
+</div>

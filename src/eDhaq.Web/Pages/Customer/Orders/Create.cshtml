@@ -1,0 +1,62 @@
+@page
+@model eDhaq.Web.Pages.Customer.Orders.CreateModel
+@{
+    ViewData["Title"] = "Book Laundry Pickup";
+}
+
+<h2 class="page-title mb-4">Book Laundry Pickup</h2>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Pickup Address</label>
+                <select asp-for="Input.PickupAddressId" asp-items="Model.AddressOptions" class="form-select"></select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Delivery Address</label>
+                <select asp-for="Input.DeliveryAddressId" asp-items="Model.AddressOptions" class="form-select"></select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Pickup Date & Time</label>
+                <input asp-for="Input.PickupScheduledAt" class="form-control" type="datetime-local" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Delivery Date & Time</label>
+                <input asp-for="Input.DeliveryScheduledAt" class="form-control" type="datetime-local" />
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Service</label>
+                <select asp-for="Input.Items[0].ServiceId" asp-items="Model.ServiceOptions" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Quantity</label>
+                <input asp-for="Input.Items[0].Quantity" class="form-control" type="number" min="1" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Payment Method</label>
+                <select asp-for="Input.PaymentMethod" class="form-select" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.PaymentMethod>()"></select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Promo Code</label>
+                <input asp-for="Input.CouponCode" class="form-control" placeholder="Optional" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Special Instructions</label>
+                <textarea asp-for="Input.SpecialInstructions" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="col-12 text-end">
+                <button class="btn btn-edhaq" type="submit">Place Order</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
