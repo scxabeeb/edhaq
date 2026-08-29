@@ -11,10 +11,11 @@ class AppConstants {
   static const String selectedRoleKey = 'selected_role';
 
   // API configuration
-  // Android emulator -> host loopback is 10.0.2.2. Backend runs on port 5058 (http).
-  // static const String baseUrl = 'http://10.0.2.2:5058';
-  // Use for iOS simulator / web / physical device on local network:
-  static const String baseUrl = 'http://localhost:5058';
+  // Production: deployed on Railway (HTTPS)
+  // For local dev, uncomment the appropriate line below:
+  // static const String baseUrl = 'http://localhost:5058';     // iOS simulator / web / physical device
+  // static const String baseUrl = 'http://10.0.2.2:5058';       // Android emulator
+  static const String baseUrl = 'https://edhaq-production.up.railway.app';
 
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
