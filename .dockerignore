@@ -1,0 +1,52 @@
+# Build artifacts (already excluded from context by .gitignore, but double-check)
+**/bin/
+**/obj/
+**/*.csproj.user
+
+# IDE
+.vs/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.suo
+*.sw?
+
+# OS junk
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Docker / Railway
+Dockerfile
+.dockerignore
+.railway/
+*.gz
+
+# Git
+.git/
+.gitignore
+
+# Docs
+*.md
+*.docx
+
+# Flutter
+edhaq_mobile/**/build/
+edhaq_mobile/**/.dart_tool/
+edhaq_mobile/**/.packages
+edhaq_mobile/**/.pub-cache/
+edhaq_mobile/.idea/
+edhaq_mobile/.gradle/
+
+# Temporary
+*.tmp
+*.cache
+temp/
+tmp/
