@@ -72,10 +72,18 @@ public static class DbInitializer
     {
         const string email = "admin@edhaq.com";
 
-        if (await userManager.FindByEmailAsync(email) is not null)
+        var existingAdmin = await userManager.FindByEmailAsync(email);
+        if (existingAdmin is not null)
         {
-            logger.LogInformation("Admin user already exists: {Email}", email);
-            return;
+            // Delete existing user to ensure a clean password hash
+            logger.LogInformation("Admin user already exists, deleting and recreating: {Email}", email);
+            var deleteResult = await userManager.DeleteAsync(existingAdmin);
+            if (!deleteResult.Succeeded)
+            {
+                var errors = string.Join(", ", deleteResult.Errors.Select(e => e.Description));
+                logger.LogError("Failed to delete existing admin user: {Errors}", errors);
+                return;
+            }
         }
 
         var admin = new ApplicationUser
@@ -120,10 +128,17 @@ public static class DbInitializer
     {
         const string email = "customer@edhaq.com";
 
-        if (await userManager.FindByEmailAsync(email) is not null)
+        var existingCustomer = await userManager.FindByEmailAsync(email);
+        if (existingCustomer is not null)
         {
-            logger.LogInformation("Demo customer already exists: {Email}", email);
-            return;
+            logger.LogInformation("Demo customer already exists, deleting and recreating: {Email}", email);
+            var deleteResult = await userManager.DeleteAsync(existingCustomer);
+            if (!deleteResult.Succeeded)
+            {
+                var errors = string.Join(", ", deleteResult.Errors.Select(e => e.Description));
+                logger.LogError("Failed to delete existing demo customer: {Errors}", errors);
+                return;
+            }
         }
 
         var customerUser = new ApplicationUser
