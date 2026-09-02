@@ -327,17 +327,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       _ActionData(
         icon: Icons.local_shipping,
         label: 'Drivers',
-        onTap: () => context.push(AppRoutes.adminOrders),
+        onTap: () => context.push(AppRoutes.adminDrivers),
       ),
       _ActionData(
         icon: Icons.category_outlined,
         label: 'Services',
-        onTap: () => context.push(AppRoutes.adminOrders),
+        onTap: () => context.push(AppRoutes.adminServices),
       ),
       _ActionData(
         icon: Icons.people_outline,
         label: 'Users',
-        onTap: () => context.push(AppRoutes.adminOrders),
+        onTap: () => context.push(AppRoutes.adminUsers),
       ),
     ];
 

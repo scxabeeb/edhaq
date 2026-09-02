@@ -23,10 +23,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _confirming = false;
   bool _paying = false;
 
-  /// USSD short-code template for clearing the payment before delivery,
-  /// e.g. *884*442628*25#
-  static String _buildUssdCode(double amount) =>
-      '*884*442628*${amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2)}#';
+  /// USSD short-code for clearing the payment before delivery, per payment
+  /// method. e.g. Sahal: *884*442628*25#
+  static String _amountPart(double amount) =>
+      amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
+
+  static String _buildUssdCode(PaymentMethod method, double amount) =>
+      switch (method) {
+        PaymentMethod.sahal => '*884*442628*${_amountPart(amount)}#',
+        // Other methods: short code to be provided later.
+        _ => '',
+      };
 
   @override
   void initState() {
@@ -248,9 +255,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           if (order.paymentStatus != PaymentStatus.paid) ...[
             _UssdPaymentCard(
               amount: order.totalAmount,
-              ussdCode: _buildUssdCode(order.totalAmount),
-              onCopy: () =>
-                  _copyUssdCode(_buildUssdCode(order.totalAmount)),
+              ussdCode:
+                  _buildUssdCode(order.paymentMethod, order.totalAmount),
+              onCopy: () => _copyUssdCode(
+                  _buildUssdCode(order.paymentMethod, order.totalAmount)),
               onPaid: _payOrder,
               paying: _paying,
             ),
@@ -649,32 +657,41 @@ class _UssdPaymentCard extends StatelessWidget {
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppTheme.accentColor.withValues(alpha: 0.4),
-                ),
-              ),
-              child: Text(
-                ussdCode,
+            if (ussdCode.isEmpty)
+              Text(
+                'USSD payment code is not available yet for this payment method.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                  color: AppTheme.primaryColor,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.accentColor.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Text(
+                  ussdCode,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    color: AppTheme.primaryColor,
+                  ),
                 ),
               ),
-            ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onCopy,
+                    onPressed: ussdCode.isEmpty ? null : onCopy,
                     icon: const Icon(Icons.copy, size: 18),
                     label: const Text('Copy Code'),
                   ),

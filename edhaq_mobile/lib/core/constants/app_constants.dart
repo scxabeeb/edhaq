@@ -29,6 +29,7 @@ class AppConstants {
   static const String addressesPath = '/api/addresses';
   static const String ordersPath = '/api/orders';
   static const String notificationsPath = '/api/notifications';
+  static const String usersPath = '/api/users';
 }
 
 enum AppRole {

@@ -20,6 +20,8 @@ import '../../features/driver/assignments_screen.dart';
 import '../../features/driver/home_screen.dart';
 import '../../features/admin/home_screen.dart';
 import '../../features/admin/orders_screen.dart';
+import '../../features/admin/services_screen.dart';
+import '../../features/admin/users_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
 /// Route names for the eDhaq app.
@@ -40,6 +42,9 @@ abstract class AppRoutes {
   static const String driverAssignments = '/driver/assignments';
   static const String adminHome = '/admin';
   static const String adminOrders = '/admin/orders';
+  static const String adminDrivers = '/admin/drivers';
+  static const String adminUsers = '/admin/users';
+  static const String adminServices = '/admin/services';
   static const String adminOrderDetail = '/admin/orders/detail';
 }
 
@@ -234,6 +239,25 @@ final GoRouter appRouter = GoRouter(
             ? state.extra as AdminOrdersFilter
             : null,
       ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminDrivers,
+      name: 'adminDrivers',
+      builder: (context, state) => const AdminUsersScreen(
+        title: 'Drivers',
+        role: 'Driver',
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminUsers,
+      name: 'adminUsers',
+      builder: (context, state) =>
+          const AdminUsersScreen(title: 'Users'),
+    ),
+    GoRoute(
+      path: AppRoutes.adminServices,
+      name: 'adminServices',
+      builder: (context, state) => const AdminServicesScreen(),
     ),
     GoRoute(
       path: '${AppRoutes.adminOrderDetail}/:id',

@@ -245,6 +245,25 @@ class ApiService {
   }
 
   // ════════════════════════════════════════════════════════════════════════
+  //  Users endpoints (admin)  —  /api/users
+  // ════════════════════════════════════════════════════════════════════════
+
+  /// Lists users, optionally filtered by role and a free-text search.
+  /// Pass [role] = 'Driver' to get all pickup and delivery drivers.
+  Future<List<AppUser>> getUsers({String? role, String? search}) async {
+    final response = await _get(
+      AppConstants.usersPath,
+      queryParameters: {
+        // ignore: use_null_aware_elements
+        if (role != null) 'role': role,
+        // ignore: use_null_aware_elements
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
+    return _fromList(response.data, AppUser.fromJson);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
   //  Admin endpoints  —  /api/orders/admin
   // ════════════════════════════════════════════════════════════════════════
 

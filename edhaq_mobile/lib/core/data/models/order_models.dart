@@ -109,6 +109,8 @@ enum PaymentMethod {
   evcPlus,
   zaad,
   eDahab,
+  sahal,
+  myCash,
   visa,
   masterCard,
   unknown,
@@ -125,6 +127,10 @@ extension PaymentMethodExtension on PaymentMethod {
         return 'ZAAD';
       case PaymentMethod.eDahab:
         return 'eDahab';
+      case PaymentMethod.sahal:
+        return 'Sahal';
+      case PaymentMethod.myCash:
+        return 'MyCash';
       case PaymentMethod.visa:
         return 'Visa';
       case PaymentMethod.masterCard:
@@ -141,6 +147,8 @@ extension PaymentMethodExtension on PaymentMethod {
       'EVCPlus' => PaymentMethod.evcPlus,
       'ZAAD' => PaymentMethod.zaad,
       'EDahab' => PaymentMethod.eDahab,
+      'Sahal' => PaymentMethod.sahal,
+      'MyCash' => PaymentMethod.myCash,
       'Visa' => PaymentMethod.visa,
       'MasterCard' => PaymentMethod.masterCard,
       _ => PaymentMethod.unknown,

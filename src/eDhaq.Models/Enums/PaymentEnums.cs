@@ -6,6 +6,8 @@ public enum PaymentMethod
     EVCPlus,
     ZAAD,
     EDahab,
+    Sahal,
+    MyCash,
     Visa,
     MasterCard
 }
