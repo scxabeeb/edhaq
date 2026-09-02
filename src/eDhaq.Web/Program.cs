@@ -11,6 +11,7 @@ using eDhaq.Services.Hubs;
 using eDhaq.Web.Core.Services;
 using eDhaq.Web.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -28,6 +29,13 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddDataLayer(builder.Configuration);
+
+// Persist Data Protection keys to a local directory so antiforgery tokens,
+// cookies, and auth tickets survive app restarts / redeployments.
+builder.Services.AddDataProtection()
+    .SetApplicationName("eDhaq")
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(
+        AppContext.BaseDirectory, "dataprotection-keys")));
 
 builder.Services
     .AddDefaultIdentity<ApplicationUser>(options =>
