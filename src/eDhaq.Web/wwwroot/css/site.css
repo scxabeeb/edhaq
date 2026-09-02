@@ -153,8 +153,6 @@ body {
 .main-content {
   flex: 1 0 auto;
   padding: 1.25rem;
-  position: relative;
-  z-index: 1; /* own stacking context: table content can never paint over the footer */
   width: 100%;
   min-width: 0;
 }
