@@ -4,23 +4,6 @@
     ViewData["Title"] = "Service Management";
 }
 
-@* TEMP DIAGNOSTIC: surface model binding / validation errors *@
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="alert alert-warning">
-        <strong>ModelState invalid:</strong>
-        <ul class="mb-0">
-        @foreach (var kv in ViewContext.ModelState)
-        {
-            foreach (var err in kv.Value.Errors)
-            {
-                <li><code>@kv.Key</code>: @err.ErrorMessage @(err.Exception != null ? $"({err.Exception.GetType().Name}: {err.Exception.Message})" : "")</li>
-            }
-        }
-        </ul>
-    </div>
-}
-
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
         <h2 class="page-title mb-1">Laundry Services</h2>

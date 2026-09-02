@@ -53,24 +53,25 @@ public class IndexModel : PageModel
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageSize > 0 && PageNumber < TotalPages;
 
-    [BindProperty(SupportsGet = true)]
-    public int? page { get; set; }
-
-    [BindProperty(SupportsGet = true)]
-    public int? size { get; set; }
-
     [BindProperty]
     public ServiceInputModel Input { get; set; } = new();
 
     public async Task OnGetAsync()
     {
+        // Read paging from the query string only. Do NOT use [BindProperty] here:
+        // on POST the page route value ("page" = "/Admin/Services/Index") would be
+        // bound to an int? property, fail conversion, and silently invalidate ModelState.
+        int? page = null, size = null;
+        if (int.TryParse(Request.Query["page"], out var p)) page = p;
+        if (int.TryParse(Request.Query["size"], out var s)) size = s;
+
         Categories = await _db.ServiceCategories
             .Include(c => c.Services)
             .OrderBy(c => c.SortOrder)
             .ToListAsync();
         CategoryOptions = Categories.Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
 
-        // Page size: 50/100/200 or 0 = All (default 50)
+        // Page size: 20/50/100/200 or 0 = All (default 20)
         PageSize = size is null ? 20 : (new[] { 0, 20, 50, 100, 200 }.Contains(size.Value) ? size.Value : 20);
         PageNumber = Math.Max(1, page ?? 1);
 
