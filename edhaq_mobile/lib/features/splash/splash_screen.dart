@@ -51,14 +51,19 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     }
 
-    // If no cached user, fetch from API
-    if (user == null) {
+    // Always revalidate the token against the API. A cached user alone is
+    // not enough — the token may reference a user that no longer exists
+    // (re-seeded DB) or may have been revoked. The DioClient interceptor
+    // clears storage on 401 / 404-of-/me, so a failure here means login.
+    if (token.isNotEmpty) {
       final result = await sl<GetCurrentUserUseCase>()(const NoParams());
       if (!mounted) return;
 
-      result.fold(
-        (failure) {
-          context.go(AppRoutes.login);
+      var validated = false;
+      await result.fold(
+        (failure) async {
+          await storage.deleteAll();
+          validated = false;
         },
         (fetchedUser) async {
           user = fetchedUser;
@@ -66,13 +71,23 @@ class _SplashScreenState extends State<SplashScreen> {
             AppConstants.userKey,
             jsonEncode(fetchedUser.toJson()),
           );
-          await _routeUser(user!, storage);
+          validated = true;
         },
       );
+
+      if (!validated) {
+        if (!mounted) return;
+        context.go(AppRoutes.login);
+        return;
+      }
+
+      if (!mounted) return;
+      await _routeUser(user!, storage);
       return;
     }
 
-    await _routeUser(user, storage);
+    if (!mounted) return;
+    context.go(AppRoutes.login);
   }
 
   Future<void> _routeUser(AppUser user, SecureStorageService storage) async {
