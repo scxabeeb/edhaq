@@ -30,12 +30,11 @@ builder.Host.UseSerilog();
 
 builder.Services.AddDataLayer(builder.Configuration);
 
-// Persist Data Protection keys to a local directory so antiforgery tokens,
+// Persist Data Protection keys to the database so antiforgery tokens,
 // cookies, and auth tickets survive app restarts / redeployments.
 builder.Services.AddDataProtection()
     .SetApplicationName("eDhaq")
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(
-        AppContext.BaseDirectory, "dataprotection-keys")));
+    .PersistKeysToDbContext<AppDbContext>();
 
 builder.Services
     .AddDefaultIdentity<ApplicationUser>(options =>
