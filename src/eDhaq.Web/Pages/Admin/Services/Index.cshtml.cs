@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using eDhaq.Data;
 using eDhaq.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -37,9 +38,20 @@ public class IndexModel : PageModel
     }
 
     public async Task<IActionResult> OnPostCreateAsync()
-        {
+    {
         // Ensure supporting data is loaded so the modal can re-render on error.
         await OnGetAsync();
+
+        // Log ModelState errors for debugging
+        if (!ModelState.IsValid)
+        {
+            var errors = string.Join("; ", ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => $"{e.ErrorMessage}{(e.Exception != null ? $" | Exception: {e.Exception.Message}" : "")}"));
+            TempData["ErrorMessage"] = $"Validation failed: {errors}";
+            await OnGetAsync();
+            return Page();
+        }
 
         if (string.IsNullOrWhiteSpace(Input.Name))
         {
