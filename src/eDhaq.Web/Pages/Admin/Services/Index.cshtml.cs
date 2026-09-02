@@ -28,7 +28,10 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        Categories = await _db.ServiceCategories.OrderBy(x => x.SortOrder).ToListAsync();
+                Categories = await _db.ServiceCategories
+            .Include(c => c.Services)
+            .OrderBy(c => c.SortOrder)
+            .ToListAsync();
         CategoryOptions = Categories.Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
         Services = await _db.LaundryServices.Include(x => x.Category).OrderBy(x => x.SortOrder).ToListAsync();
     }
@@ -119,7 +122,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
-        var item = await _db.LaundryServices.FindAsync(id);
+                        var item = await _db.LaundryServices.FindAsync(id);
         if (item is not null)
         {
             _db.LaundryServices.Remove(item);
@@ -148,6 +151,69 @@ public class IndexModel : PageModel
         _db.ServiceCategories.Add(new ServiceCategory { Name = categoryName.Trim() });
         await _db.SaveChangesAsync();
         TempData["SuccessMessage"] = $"Category '{categoryName}' created.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostEditCategoryAsync(int id, string name)
+    {
+        if (id <= 0)
+        {
+            TempData["ErrorMessage"] = "Invalid category.";
+            return RedirectToPage();
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TempData["ErrorMessage"] = "Category name is required.";
+            return RedirectToPage();
+        }
+
+        var item = await _db.ServiceCategories.FindAsync(id);
+        if (item is null)
+        {
+            TempData["ErrorMessage"] = "Category not found.";
+            return RedirectToPage();
+        }
+
+        name = name.Trim();
+        if (await _db.ServiceCategories.AnyAsync(c => c.Name == name && c.Id != id))
+        {
+            TempData["ErrorMessage"] = "Another category with this name already exists.";
+            return RedirectToPage();
+        }
+
+        item.Name = name;
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = "Category updated.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteCategoryAsync(int id)
+    {
+        if (id <= 0)
+        {
+            TempData["ErrorMessage"] = "Invalid category.";
+            return RedirectToPage();
+        }
+
+        var item = await _db.ServiceCategories
+            .Include(c => c.Services)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        if (item is null)
+        {
+            TempData["ErrorMessage"] = "Category not found.";
+            return RedirectToPage();
+        }
+
+        if (item.Services.Count > 0)
+        {
+            TempData["ErrorMessage"] = $"Cannot delete '{item.Name}' because {item.Services.Count} service(s) are assigned to it. Reassign or delete the services first.";
+            return RedirectToPage();
+        }
+
+        _db.ServiceCategories.Remove(item);
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"Category '{item.Name}' deleted.";
         return RedirectToPage();
     }
 }
