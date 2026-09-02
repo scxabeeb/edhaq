@@ -1,3 +1,4 @@
+using System;
 using eDhaq.Data;
 using eDhaq.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -33,17 +34,47 @@ public class IndexModel : PageModel
     }
 
     public async Task<IActionResult> OnPostCreateAsync()
-    {
+        {
+        // Ensure supporting data is loaded so the modal can re-render on error.
+        await OnGetAsync();
+
+        if (string.IsNullOrWhiteSpace(Input.Name))
+        {
+            ModelState.AddModelError("Input.Name", "Service name is required.");
+        }
+        else if (await _db.ServiceCategories.AnyAsync(s => s.Name == Input.Name.Trim()))
+        {
+            ModelState.AddModelError("Input.Name", "A service with this name already exists.");
+        }
+
         if (!ModelState.IsValid)
         {
             await OnGetAsync();
             return Page();
         }
 
-        Input.CreatedAt = DateTime.UtcNow;
-        _db.LaundryServices.Add(Input);
-        await _db.SaveChangesAsync();
-        TempData["SuccessMessage"] = "Service added.";
+        // Validate category association (prevents silent FK failures).
+        var categoryExists = await _db.ServiceCategories.AnyAsync(c => c.Id == Input.CategoryId);
+        if (!categoryExists)
+        {
+            ModelState.AddModelError("Input.CategoryId", "Please select a valid category.");
+            await OnGetAsync();
+            return Page();
+        }
+
+        try
+        {
+            Input.CreatedAt = DateTime.UtcNow;
+            Input.Name = Input.Name.Trim();
+            _db.LaundryServices.Add(Input);
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Service added.";
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Unable to create service: {ex.Message}";
+        }
+
         return RedirectToPage();
     }
 
