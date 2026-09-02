@@ -153,6 +153,10 @@ body {
 .main-content {
   flex: 1 0 auto;
   padding: 1.25rem;
+  position: relative;
+  z-index: 1; /* own stacking context: table content can never paint over the footer */
+  width: 100%;
+  min-width: 0;
 }
 
 .page-title {
@@ -600,12 +604,33 @@ body {
   padding: 0.85rem 1.75rem;
   border-top: 1px solid var(--edhaq-border);
   background: #fff;
+  position: relative;
+  z-index: 5; /* always paints above main content; never inside/behind the table */
+  flex: 0 0 auto;
 }
 
 .footer-content {
   color: #8a92a8;
   font-size: 0.82rem;
   font-weight: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  align-items: baseline;
+}
+
+.footer-rights {
+  color: #a5adbf;
+}
+
+/* Table cards: keep rows fully inside their own container, never bleeding under the footer */
+.main-content .card {
+  position: relative;
+  z-index: auto;
+}
+
+.main-content .table-responsive {
+  max-height: none; /* the page scrolls naturally; no inner scroll that could sandwich the footer between rows */
 }
 
 .footer-content strong {
