@@ -47,7 +47,7 @@ public class IndexModel : PageModel
 
     // Pagination
     public int PageNumber { get; private set; } = 1;
-    public int PageSize { get; private set; } = 50;   // 0 = All
+    public int PageSize { get; private set; } = 20;   // 0 = All
     public int TotalCount { get; private set; }
     public int TotalPages => PageSize > 0 ? (int)Math.Ceiling(TotalCount / (double)PageSize) : 1;
     public bool HasPreviousPage => PageNumber > 1;
@@ -71,7 +71,7 @@ public class IndexModel : PageModel
         CategoryOptions = Categories.Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
 
         // Page size: 50/100/200 or 0 = All (default 50)
-        PageSize = size is null ? 50 : (new[] { 0, 50, 100, 200 }.Contains(size.Value) ? size.Value : 50);
+        PageSize = size is null ? 20 : (new[] { 0, 20, 50, 100, 200 }.Contains(size.Value) ? size.Value : 20);
         PageNumber = Math.Max(1, page ?? 1);
 
         var all = await _db.LaundryServices.Include(x => x.Category).OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
