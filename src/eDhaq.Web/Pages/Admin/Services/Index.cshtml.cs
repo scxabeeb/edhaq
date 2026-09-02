@@ -53,29 +53,54 @@ public class IndexModel : PageModel
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageSize > 0 && PageNumber < TotalPages;
 
+    // Search
+    public string SearchTerm { get; private set; } = string.Empty;
+
     [BindProperty]
     public ServiceInputModel Input { get; set; } = new();
 
     public async Task OnGetAsync()
     {
-        // Read paging from the query string only. Use "pageNumber" (not the reserved
-        // "page" route param) so pagination links keep the value and ModelState is
-        // never polluted by the page route value on POST.
+        // Read paging + search from the query string only. Use "pageNumber" (not the
+        // reserved "page" route param) so links keep the value and ModelState is never
+        // polluted by the page route value on POST.
         int? page = null, size = null;
         if (int.TryParse(Request.Query["pageNumber"], out var p)) page = p;
         if (int.TryParse(Request.Query["size"], out var s)) size = s;
+        SearchTerm = (Request.Query["q"].ToString() ?? string.Empty).Trim();
 
-        Categories = await _db.ServiceCategories
+        var categoriesQuery = _db.ServiceCategories
             .Include(c => c.Services)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            categoriesQuery = categoriesQuery.Where(c => c.Name.Contains(SearchTerm));
+        }
+
+        Categories = await categoriesQuery
             .OrderBy(c => c.SortOrder)
             .ToListAsync();
-        CategoryOptions = Categories.Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
+
+        // Category dropdown always shows ALL categories (not filtered by search).
+        CategoryOptions = await _db.ServiceCategories
+            .OrderBy(c => c.SortOrder)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync();
 
         // Page size: 20/50/100/200 or 0 = All (default 20)
         PageSize = size is null ? 20 : (new[] { 0, 20, 50, 100, 200 }.Contains(size.Value) ? size.Value : 20);
         PageNumber = Math.Max(1, page ?? 1);
 
-        var all = await _db.LaundryServices.Include(x => x.Category).OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
+        var servicesQuery = _db.LaundryServices.Include(x => x.Category).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            servicesQuery = servicesQuery.Where(x =>
+                x.Name.Contains(SearchTerm) ||
+                (x.Category != null && x.Category.Name.Contains(SearchTerm)));
+        }
+
+        var all = await servicesQuery.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
         TotalCount = all.Count;
 
         if (PageSize <= 0)

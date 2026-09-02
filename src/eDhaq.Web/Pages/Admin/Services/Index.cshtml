@@ -19,6 +19,22 @@
     </div>
 </div>
 
+<!-- Search (filters both services and categories) -->
+<form method="get" class="mb-4">
+    <div class="input-group" style="max-width:480px">
+        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="@Model.SearchTerm" class="form-control" placeholder="Search services or categories..." />
+        <input type="hidden" name="size" value="@Model.PageSize" />
+        <button type="submit" class="btn btn-edhaq">Search</button>
+        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+        {
+            <a class="btn btn-outline-secondary" asp-page="./Index" asp-route-size="@Model.PageSize" title="Clear search">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        }
+    </div>
+</form>
+
 <!-- Categories Table -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="table-responsive">
@@ -163,16 +179,16 @@
             <nav aria-label="Services pagination">
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-size="@Model.PageSize">Prev</a>
+                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-size="@Model.PageSize" asp-route-q="@Model.SearchTerm">Prev</a>
                     </li>
                     @for (var i = 1; i <= Model.TotalPages; i++)
                     {
                         <li class="page-item @(i == Model.PageNumber ? "active" : "")">
-                            <a class="page-link" asp-page="./Index" asp-route-pageNumber="@i" asp-route-size="@Model.PageSize">@i</a>
+                            <a class="page-link" asp-page="./Index" asp-route-pageNumber="@i" asp-route-size="@Model.PageSize" asp-route-q="@Model.SearchTerm">@i</a>
                         </li>
                     }
                     <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-size="@Model.PageSize">Next</a>
+                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-size="@Model.PageSize" asp-route-q="@Model.SearchTerm">Next</a>
                     </li>
                 </ul>
             </nav>
