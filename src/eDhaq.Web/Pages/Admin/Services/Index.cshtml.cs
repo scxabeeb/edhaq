@@ -45,7 +45,7 @@ public class IndexModel : PageModel
         {
             ModelState.AddModelError("Input.Name", "Service name is required.");
         }
-        else if (await _db.ServiceCategories.AnyAsync(s => s.Name == Input.Name.Trim()))
+        else if (await _db.LaundryServices.AnyAsync(s => s.Name == Input.Name.Trim()))
         {
             ModelState.AddModelError("Input.Name", "A service with this name already exists.");
         }
