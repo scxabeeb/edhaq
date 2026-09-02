@@ -1,5 +1,4 @@
-using System;
-using System.Linq;
+using System.ComponentModel.DataAnnotations;
 using eDhaq.Data;
 using eDhaq.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +8,28 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace eDhaq.Web.Pages.Admin.Services;
+
+public class ServiceInputModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Service name is required.")]
+    [MaxLength(150)]
+    public string Name { get; set; } = string.Empty;
+
+    public int CategoryId { get; set; }
+
+    [Range(0, 9999999.99, ErrorMessage = "Please enter a valid price.")]
+    public decimal PricePerPiece { get; set; }
+
+    [Range(0, 100000)]
+    public int EstimatedHours { get; set; } = 24;
+
+    [MaxLength(100)]
+    public string? IconClass { get; set; }
+
+    public int SortOrder { get; set; }
+}
 
 [Authorize(Roles = "Administrator,Manager")]
 public class IndexModel : PageModel
@@ -25,50 +46,25 @@ public class IndexModel : PageModel
     public List<SelectListItem> CategoryOptions { get; private set; } = [];
 
     [BindProperty]
-    public LaundryService Input { get; set; } = new();
+    public ServiceInputModel Input { get; set; } = new();
 
     public async Task OnGetAsync()
     {
-                Categories = await _db.ServiceCategories
+        Categories = await _db.ServiceCategories
             .Include(c => c.Services)
             .OrderBy(c => c.SortOrder)
             .ToListAsync();
         CategoryOptions = Categories.Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
         Services = await _db.LaundryServices.Include(x => x.Category).OrderBy(x => x.SortOrder).ToListAsync();
     }
-
-    public async Task<IActionResult> OnPostCreateAsync()
+public async Task<IActionResult> OnPostCreateAsync()
     {
-        // Ensure supporting data is loaded so the modal can re-render on error.
-        await OnGetAsync();
-
-        // Log ModelState errors for debugging
-        if (!ModelState.IsValid)
-        {
-            var errors = string.Join("; ", ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => $"{e.ErrorMessage}{(e.Exception != null ? $" | Exception: {e.Exception.Message}" : "")}"));
-            TempData["ErrorMessage"] = $"Validation failed: {errors}";
-            await OnGetAsync();
-            return Page();
-        }
-
-        if (string.IsNullOrWhiteSpace(Input.Name))
-        {
-            ModelState.AddModelError("Input.Name", "Service name is required.");
-        }
-        else if (await _db.LaundryServices.AnyAsync(s => s.Name == Input.Name.Trim()))
-        {
-            ModelState.AddModelError("Input.Name", "A service with this name already exists.");
-        }
-
         if (!ModelState.IsValid)
         {
             await OnGetAsync();
             return Page();
         }
 
-        // Validate category association (prevents silent FK failures).
         var categoryExists = await _db.ServiceCategories.AnyAsync(c => c.Id == Input.CategoryId);
         if (!categoryExists)
         {
@@ -79,9 +75,17 @@ public class IndexModel : PageModel
 
         try
         {
-            Input.CreatedAt = DateTime.UtcNow;
-            Input.Name = Input.Name.Trim();
-            _db.LaundryServices.Add(Input);
+            var service = new LaundryService
+            {
+                Name = Input.Name.Trim(),
+                CategoryId = Input.CategoryId,
+                PricePerPiece = Input.PricePerPiece,
+                EstimatedHours = Input.EstimatedHours,
+                IconClass = Input.IconClass,
+                SortOrder = Input.SortOrder,
+                CreatedAt = DateTime.UtcNow
+            };
+            _db.LaundryServices.Add(service);
             await _db.SaveChangesAsync();
             TempData["SuccessMessage"] = "Service added.";
         }
@@ -101,7 +105,6 @@ public class IndexModel : PageModel
             item.IsActive = !item.IsActive;
             await _db.SaveChangesAsync();
         }
-
         return RedirectToPage();
     }
 
@@ -112,36 +115,32 @@ public class IndexModel : PageModel
             TempData["ErrorMessage"] = "Invalid service.";
             return RedirectToPage();
         }
-
         var item = await _db.LaundryServices.FindAsync(Input.Id);
         if (item is null)
         {
             TempData["ErrorMessage"] = "Service not found.";
             return RedirectToPage();
         }
-
-        item.Name           = Input.Name;
+        item.Name           = Input.Name.Trim();
         item.CategoryId     = Input.CategoryId;
         item.PricePerPiece  = Input.PricePerPiece;
         item.EstimatedHours = Input.EstimatedHours;
         item.IconClass      = Input.IconClass;
         item.SortOrder      = Input.SortOrder;
         await _db.SaveChangesAsync();
-
         TempData["SuccessMessage"] = "Service updated.";
         return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
-                        var item = await _db.LaundryServices.FindAsync(id);
+        var item = await _db.LaundryServices.FindAsync(id);
         if (item is not null)
         {
             _db.LaundryServices.Remove(item);
             await _db.SaveChangesAsync();
             TempData["SuccessMessage"] = "Service deleted.";
         }
-
         return RedirectToPage();
     }
 
@@ -152,14 +151,12 @@ public class IndexModel : PageModel
             TempData["ErrorMessage"] = "Category name is required.";
             return RedirectToPage();
         }
-
         var exists = await _db.ServiceCategories.AnyAsync(x => x.Name == categoryName.Trim());
         if (exists)
         {
             TempData["ErrorMessage"] = "Category already exists.";
             return RedirectToPage();
         }
-
         _db.ServiceCategories.Add(new ServiceCategory { Name = categoryName.Trim() });
         await _db.SaveChangesAsync();
         TempData["SuccessMessage"] = $"Category '{categoryName}' created.";
@@ -173,27 +170,23 @@ public class IndexModel : PageModel
             TempData["ErrorMessage"] = "Invalid category.";
             return RedirectToPage();
         }
-
         if (string.IsNullOrWhiteSpace(name))
         {
             TempData["ErrorMessage"] = "Category name is required.";
             return RedirectToPage();
         }
-
         var item = await _db.ServiceCategories.FindAsync(id);
         if (item is null)
         {
             TempData["ErrorMessage"] = "Category not found.";
             return RedirectToPage();
         }
-
         name = name.Trim();
         if (await _db.ServiceCategories.AnyAsync(c => c.Name == name && c.Id != id))
         {
             TempData["ErrorMessage"] = "Another category with this name already exists.";
             return RedirectToPage();
         }
-
         item.Name = name;
         await _db.SaveChangesAsync();
         TempData["SuccessMessage"] = "Category updated.";
@@ -207,7 +200,6 @@ public class IndexModel : PageModel
             TempData["ErrorMessage"] = "Invalid category.";
             return RedirectToPage();
         }
-
         var item = await _db.ServiceCategories
             .Include(c => c.Services)
             .FirstOrDefaultAsync(c => c.Id == id);
@@ -216,13 +208,11 @@ public class IndexModel : PageModel
             TempData["ErrorMessage"] = "Category not found.";
             return RedirectToPage();
         }
-
         if (item.Services.Count > 0)
         {
             TempData["ErrorMessage"] = $"Cannot delete '{item.Name}' because {item.Services.Count} service(s) are assigned to it. Reassign or delete the services first.";
             return RedirectToPage();
         }
-
         _db.ServiceCategories.Remove(item);
         await _db.SaveChangesAsync();
         TempData["SuccessMessage"] = $"Category '{item.Name}' deleted.";
