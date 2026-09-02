@@ -133,6 +133,9 @@ public class AuthController : ApiControllerBase
             CreatedAt = DateTime.UtcNow
         };
         _db.Customers.Add(customer);
+        // Save first so the DB-generated Customer.Id is populated
+        // (Addresses/Wallets have an FK to Customers.Id).
+        await _db.SaveChangesAsync();
 
         _db.Addresses.Add(new Address
         {
