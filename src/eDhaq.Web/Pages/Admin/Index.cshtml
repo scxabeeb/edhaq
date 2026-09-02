@@ -1,7 +1,29 @@
 @page
 @model eDhaq.Web.Pages.Admin.IndexModel
+@using eDhaq.Models.Enums
 @{
     ViewData["Title"] = "Admin Dashboard";
+    var d = Model.Dashboard;
+    string StatusColor(OrderStatus s) => s switch
+    {
+        OrderStatus.OrderPlaced => "#F59E0B",
+        OrderStatus.PickupScheduled => "#2D6CDF",
+        OrderStatus.DriverAssigned => "#3B82F6",
+        OrderStatus.DriverOnTheWay => "#0EA5E9",
+        OrderStatus.ClothesPickedUp => "#6B7280",
+        OrderStatus.LaundryReceived => "#64748B",
+        OrderStatus.Sorting => "#78716C",
+        OrderStatus.Washing => "#9333EA",
+        OrderStatus.DryCleaning => "#A855F7",
+        OrderStatus.Drying => "#C026D3",
+        OrderStatus.Ironing => "#DB2777",
+        OrderStatus.Folding => "#EC4899",
+        OrderStatus.Packaging => "#F472B6",
+        OrderStatus.ReadyForDelivery => "#8B5CF6",
+        OrderStatus.Completed => "#14A44D",
+        OrderStatus.Cancelled => "#D71920",
+        _ => "#6B7280"
+    };
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -9,41 +31,122 @@
         <h2 class="page-title mb-1">Admin Dashboard</h2>
         <p class="text-muted mb-0">Operational overview for e-Dhaq.</p>
     </div>
+    <div class="text-muted small">
+        <i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("dddd, MMMM d, yyyy")
+    </div>
 </div>
 
+@* ===== Stat cards ===== *@
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="metric-card"><span>Today's Revenue</span><h4>@Model.Dashboard.TodaysRevenue.ToString("C")</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Today's Orders</span><h4>@Model.Dashboard.TodaysOrders</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Pending Orders</span><h4>@Model.Dashboard.PendingOrders</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Completed</span><h4>@Model.Dashboard.CompletedOrders</h4></div></div>
-</div>
-
-<div class="card shadow-sm border-0">
-    <div class="card-body">
-        <h5 class="card-title">Order Status Snapshot</h5>
-        <div class="d-flex flex-wrap gap-2 mt-3">
-            @foreach (var item in Model.Dashboard.OrdersByStatus)
-            {
-                <span class="badge text-bg-light p-2">@item.Key: @item.Value</span>
-            }
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Today's Revenue</span>
+                <h4 class="stat-value">@d.TodaysRevenue.ToString("C")</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-basket2"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Today's Orders</span>
+                <h4 class="stat-value">@d.TodaysOrders</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-warning">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Pending Orders</span>
+                <h4 class="stat-value">@d.PendingOrders</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-success">
+            <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Completed Orders</span>
+                <h4 class="stat-value">@d.CompletedOrders</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-danger">
+            <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Cancelled Orders</span>
+                <h4 class="stat-value">@d.CancelledOrders</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Total Customers</span>
+                <h4 class="stat-value">@d.TotalCustomers</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-teal">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Total Drivers</span>
+                <h4 class="stat-value">@d.TotalDrivers</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="stat-card stat-slate">
+            <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
+            <div class="stat-body">
+                <span class="stat-label">Total Staff</span>
+                <h4 class="stat-value">@d.TotalStaff</h4>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row g-3 mt-1">
-    <div class="col-lg-8">
-        <div class="card shadow-sm border-0">
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
-                <h5 class="card-title">Weekly Revenue</h5>
-                <canvas id="weeklyRevenueChart" height="120"></canvas>
+                <h5 class="card-title"><i class="bi bi-pie-chart me-2 text-muted"></i>Order Status Snapshot</h5>
+                <div class="status-grid mt-3">
+                    @foreach (var item in d.OrdersByStatus)
+                    {
+                        <div class="status-pill" style="--status-color: @StatusColor(item.Key)">
+                            <span class="status-dot"></span>
+                            <span class="status-name">@item.Key</span>
+                            <span class="status-count">@item.Value</span>
+                        </div>
+                    }
+                    @if (!d.OrdersByStatus.Any())
+                    {
+                        <span class="text-muted small">No orders yet.</span>
+                    }
+                </div>
             </div>
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
-                <h5 class="card-title">Order Distribution</h5>
-                <canvas id="statusChart" height="220"></canvas>
+                <h5 class="card-title"><i class="bi bi-graph-up-arrow me-2 text-muted"></i>Weekly Revenue</h5>
+                <canvas id="weeklyRevenueChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-diagram-3 me-2 text-muted"></i>Order Distribution</h5>
+                <canvas id="statusChart" height="180"></canvas>
             </div>
         </div>
     </div>

@@ -164,6 +164,108 @@ body {
   font-weight: 700;
 }
 
+/* ===== Dashboard stat cards ===== */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: #fff;
+  border: 1px solid var(--edhaq-border);
+  border-radius: 0.9rem;
+  padding: 1rem 1.1rem;
+  height: 100%;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, .05);
+  transition: transform .15s ease, box-shadow .15s ease;
+  border-left: 4px solid var(--stat-accent, var(--edhaq-primary));
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, .10);
+}
+
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: var(--stat-accent, var(--edhaq-primary));
+  background: color-mix(in srgb, var(--stat-accent, var(--edhaq-primary)) 12%, #fff);
+  flex: 0 0 auto;
+}
+
+.stat-body { min-width: 0; }
+
+.stat-label {
+  display: block;
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: #8a92a8;
+}
+
+.stat-value {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1f2330;
+  line-height: 1.2;
+}
+
+.stat-primary { --stat-accent: #D71920; }
+.stat-blue    { --stat-accent: #2D6CDF; }
+.stat-warning { --stat-accent: #F59E0B; }
+.stat-success { --stat-accent: #14A44D; }
+.stat-danger  { --stat-accent: #DC2626; }
+.stat-purple  { --stat-accent: #9333EA; }
+.stat-teal    { --stat-accent: #0D9488; }
+.stat-slate   { --stat-accent: #475569; }
+
+/* ===== Status snapshot pills ===== */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.6rem;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--edhaq-border);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  background: #fafbfc;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--status-color, #6B7280);
+  flex: 0 0 auto;
+}
+
+.status-name {
+  font-size: .82rem;
+  font-weight: 600;
+  color: #3d4354;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-count {
+  font-size: .85rem;
+  font-weight: 700;
+  color: #1f2330;
+}
+
 .public-hero {
   background: linear-gradient(120deg, #ffffff 0%, #f7f9fd 52%, #fff3f3 100%);
   border: 1px solid var(--edhaq-border);
