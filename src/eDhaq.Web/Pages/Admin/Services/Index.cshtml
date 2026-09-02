@@ -7,7 +7,7 @@
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
         <h2 class="page-title mb-1">Laundry Services</h2>
-        <p class="text-muted mb-0" style="font-size:.9rem">@Model.Services.Count service(s) across @Model.Categories.Count categories</p>
+        <p class="text-muted mb-0" style="font-size:.9rem">@Model.TotalCount service(s) across @Model.Categories.Count categories</p>
     </div>
     <div class="d-flex gap-2">
         <button class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
@@ -68,6 +68,20 @@
 
 <!-- Services Table -->
 <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3">
+        <span class="fw-semibold text-muted small">
+            Showing @(Model.TotalCount == 0 ? 0 : (Model.PageNumber - 1) * Model.PageSize + 1)–@((Model.PageNumber - 1) * Model.PageSize + Model.Services.Count) of @Model.TotalCount
+        </span>
+        <div class="d-flex align-items-center gap-2">
+            <label class="small text-muted mb-0">Rows per page</label>
+            <select id="pageSizeSelect" class="form-select form-select-sm" style="width:auto">
+                <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                <option value="200" selected="@(Model.PageSize == 200)">200</option>
+                <option value="0" selected="@(Model.PageSize == 0)">All</option>
+            </select>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-dark">
@@ -142,6 +156,27 @@
             </tbody>
         </table>
     </div>
+    @if (Model.PageSize > 0 && Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-0 d-flex justify-content-center pb-3">
+            <nav aria-label="Services pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber - 1)" asp-route-size="@Model.PageSize">Prev</a>
+                    </li>
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-page="./Index" asp-route-page="@i" asp-route-size="@Model.PageSize">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber + 1)" asp-route-size="@Model.PageSize">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -350,6 +385,14 @@
         var btn = e.relatedTarget;
         document.getElementById('deleteSvcId').value    = btn.dataset.id;
         document.getElementById('deleteSvcName').textContent = btn.dataset.name;
+    });
+
+    // Page size selector — reload with chosen size
+    document.getElementById('pageSizeSelect').addEventListener('change', function() {
+        var url = new URL(window.location.href);
+        url.searchParams.set('size', this.value);
+        url.searchParams.delete('page'); // reset to first page
+        window.location.href = url.toString();
     });
 </script>
 }
