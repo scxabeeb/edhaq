@@ -163,16 +163,16 @@
             <nav aria-label="Services pagination">
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                        <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber - 1)" asp-route-size="@Model.PageSize">Prev</a>
+                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-size="@Model.PageSize">Prev</a>
                     </li>
                     @for (var i = 1; i <= Model.TotalPages; i++)
                     {
                         <li class="page-item @(i == Model.PageNumber ? "active" : "")">
-                            <a class="page-link" asp-page="./Index" asp-route-page="@i" asp-route-size="@Model.PageSize">@i</a>
+                            <a class="page-link" asp-page="./Index" asp-route-pageNumber="@i" asp-route-size="@Model.PageSize">@i</a>
                         </li>
                     }
                     <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                        <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber + 1)" asp-route-size="@Model.PageSize">Next</a>
+                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-size="@Model.PageSize">Next</a>
                     </li>
                 </ul>
             </nav>
@@ -392,7 +392,8 @@
     document.getElementById('pageSizeSelect').addEventListener('change', function() {
         var url = new URL(window.location.href);
         url.searchParams.set('size', this.value);
-        url.searchParams.delete('page'); // reset to first page
+        url.searchParams.delete('pageNumber'); // reset to first page
+        url.searchParams.delete('page');       // legacy param cleanup
         window.location.href = url.toString();
     });
 </script>

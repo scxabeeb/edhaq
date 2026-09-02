@@ -58,11 +58,11 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        // Read paging from the query string only. Do NOT use [BindProperty] here:
-        // on POST the page route value ("page" = "/Admin/Services/Index") would be
-        // bound to an int? property, fail conversion, and silently invalidate ModelState.
+        // Read paging from the query string only. Use "pageNumber" (not the reserved
+        // "page" route param) so pagination links keep the value and ModelState is
+        // never polluted by the page route value on POST.
         int? page = null, size = null;
-        if (int.TryParse(Request.Query["page"], out var p)) page = p;
+        if (int.TryParse(Request.Query["pageNumber"], out var p)) page = p;
         if (int.TryParse(Request.Query["size"], out var s)) size = s;
 
         Categories = await _db.ServiceCategories
@@ -126,7 +126,10 @@ public async Task<IActionResult> OnPostCreateAsync()
             TempData["ErrorMessage"] = $"Unable to create service: {ex.Message}";
         }
 
-        return RedirectToPage();
+        // Redirect to the last page so the newly added service (default sort) is visible.
+        var total = await _db.LaundryServices.CountAsync();
+        var lastPage = Math.Max(1, (int)Math.Ceiling(total / 20.0));
+        return RedirectToPage(new { pageNumber = lastPage, size = 20 });
     }
 
     public async Task<IActionResult> OnPostToggleAsync(int id)
