@@ -372,7 +372,8 @@ public class IndexModel : PageModel
         item.TotalPrice = item.UnitPrice * item.Quantity;
 
         order.SubTotal = order.Items.Sum(x => x.TotalPrice);
-        order.TotalAmount = order.SubTotal + order.DeliveryFee - order.Discount;
+        order.DeliveryFee = 0; // delivery fee removed
+        order.TotalAmount = order.SubTotal - order.Discount;
         order.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

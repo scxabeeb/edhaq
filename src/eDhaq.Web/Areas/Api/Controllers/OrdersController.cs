@@ -840,9 +840,9 @@ public class OrdersController : ApiControllerBase
             PaymentStatus = order.PaymentStatus,
             PaymentMethod = order.PaymentMethod,
             SubTotal = order.SubTotal,
-            DeliveryFee = order.DeliveryFee,
+            DeliveryFee = 0, // delivery fee removed everywhere
             Discount = order.Discount,
-            TotalAmount = order.TotalAmount,
+            TotalAmount = order.SubTotal - order.Discount,
             SpecialInstructions = order.SpecialInstructions,
             PickupScheduledAt = order.PickupScheduledAt,
             PickupActualAt = order.PickupActualAt,

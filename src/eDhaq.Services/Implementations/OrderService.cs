@@ -121,9 +121,9 @@ public class OrderService : IOrderService
             }
 
             order.SubTotal = subtotal;
-            order.DeliveryFee = 2.0m;
+            order.DeliveryFee = 0;
             order.Discount = 0;
-            order.TotalAmount = order.SubTotal + order.DeliveryFee - order.Discount;
+            order.TotalAmount = order.SubTotal - order.Discount;
             customer.TotalOrders += 1;
             customer.TotalSpent += order.TotalAmount;
 

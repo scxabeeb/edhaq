@@ -23,10 +23,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final _specialInstructionsController = TextEditingController();
   final _couponController = TextEditingController();
+  final _searchController = TextEditingController();
 
   bool _isLoading = false;
   bool _loadingData = true;
-  String? _error;
+  bool _cartExpanded = false;
+  String _error = '';
+  String _searchQuery = '';
 
   // Data
   List<AddressModel> _addresses = [];
@@ -52,13 +55,35 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   void dispose() {
     _specialInstructionsController.dispose();
     _couponController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  /// Services filtered by the active category and search query.
+  List<ServiceModel> get _filteredServices {
+    final query = _searchQuery.trim().toLowerCase();
+    return _services.where((s) {
+      if (_selectedCategory != null && s.categoryId != _selectedCategory!.id) {
+        return false;
+      }
+      if (query.isNotEmpty && !s.name.toLowerCase().contains(query)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  List<MapEntry<ServiceModel, int>> get _cartEntries {
+    return _selectedServices.entries
+        .map((e) => MapEntry(
+            _services.firstWhere((s) => s.id == e.key), e.value))
+        .toList();
   }
 
   Future<void> _loadData() async {
     setState(() {
       _loadingData = true;
-      _error = null;
+      _error = '';
     });
 
     // Load addresses
@@ -144,9 +169,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return total;
   }
 
-  double get _deliveryFee => 5.0; // Default delivery fee
-
-  double get _total => _subtotal + _deliveryFee;
+  double get _total => _subtotal;
 
   Future<void> _createOrder() async {
     if (!_formKey.currentState!.validate()) return;
@@ -239,9 +262,122 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ),
       body: _loadingData
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+          : _error.isNotEmpty
               ? _buildError(theme)
               : _buildForm(theme),
+    );
+  }
+
+  /// Collapsible Selected Services / cart panel.
+  Widget _buildCartPanel(ThemeData theme) {
+    final entries = _cartEntries;
+    final count = _selectedServices.length;
+    final grandTotal = _subtotal;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: entries.isEmpty
+                  ? null
+                  : () => setState(() => _cartExpanded = !_cartExpanded),
+              child: Row(
+                children: [
+                  Icon(
+                    _cartExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Selected Services ($count)',
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Text(
+                    'Total: \$${grandTotal.toStringAsFixed(2)}',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.secondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_cartExpanded && entries.isNotEmpty) ...[
+              const Divider(height: 24),
+              ...entries.map((entry) {
+                final service = entry.key;
+                final qty = entry.value;
+                final lineTotal = service.pricePerPiece * qty;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(service.name,
+                                style: theme.textTheme.labelLarge),
+                            Text(
+                              '${service.categoryName ?? 'Service'} · $qty × \$${service.pricePerPiece.toStringAsFixed(2)}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text(
+                          '\$${lineTotal.toStringAsFixed(2)}',
+                          style: theme.textTheme.labelLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      _QuantityControls(
+                        quantity: qty,
+                        onChanged: (newQty) {
+                          setState(() {
+                            if (newQty > 0) {
+                              _selectedServices[service.id] = newQty;
+                            } else {
+                              _selectedServices.remove(service.id);
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Grand Total',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    '\$${grandTotal.toStringAsFixed(2)}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.secondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -253,7 +389,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
           const SizedBox(height: 16),
           Text(
-            _error ?? 'Something went wrong',
+            _error.isNotEmpty ? _error : 'Something went wrong',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge,
           ),
@@ -374,56 +510,96 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           const SizedBox(height: 16),
 
           // Services
-          Text('Services', style: theme.textTheme.titleMedium),
+          Text('SERVICES', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Category filter
-                  DropdownButtonFormField<int>(
-                    initialValue: _selectedCategory?.id,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    items: _categories
-                        .map((c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory =
-                            _categories.firstWhere((c) => c.id == value);
-                      });
+
+          // Search field
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search service...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (value) => setState(() => _searchQuery = value),
+          ),
+          const SizedBox(height: 8),
+
+          // Category filter
+          DropdownButtonFormField<int>(
+            initialValue: _selectedCategory?.id,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'All Services',
+              prefixIcon: Icon(Icons.category_outlined),
+            ),
+            items: [
+              const DropdownMenuItem<int>(
+                value: null,
+                child: Text('All Services'),
+              ),
+              ..._categories.map((c) => DropdownMenuItem(
+                    value: c.id,
+                    child: Text(c.name),
+                  )),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _selectedCategory =
+                    value == null ? null : _categories.firstWhere((c) => c.id == value);
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Available services list (scrollable, bounded height, efficient)
+          Text('Available Services', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 420),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: _filteredServices.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: Text('No services found')),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _filteredServices.length,
+                    itemBuilder: (context, index) {
+                      final service = _filteredServices[index];
+                      return _ServiceTile(
+                        service: service,
+                        quantity: _selectedServices[service.id] ?? 0,
+                        onQuantityChanged: (qty) {
+                          setState(() {
+                            if (qty > 0) {
+                              _selectedServices[service.id] = qty;
+                            } else {
+                              _selectedServices.remove(service.id);
+                            }
+                          });
+                        },
+                      );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  // Services list
-                  ..._services
-                      .where((s) =>
-                          _selectedCategory == null ||
-                          s.categoryId == _selectedCategory!.id)
-                      .map((service) => _ServiceTile(
-                            service: service,
-                            quantity: _selectedServices[service.id] ?? 0,
-                            onQuantityChanged: (qty) {
-                              setState(() {
-                                if (qty > 0) {
-                                  _selectedServices[service.id] = qty;
-                                } else {
-                                  _selectedServices.remove(service.id);
-                                }
-                              });
-                            },
-                          )),
-                ],
-              ),
-            ),
           ),
+          const SizedBox(height: 16),
+
+          // Selected Services / cart panel
+          _buildCartPanel(theme),
           const SizedBox(height: 16),
 
           // Payment method
@@ -480,8 +656,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: Column(
                 children: [
                   _PriceRow(label: 'Subtotal', value: _subtotal),
-                  const SizedBox(height: 8),
-                  _PriceRow(label: 'Delivery Fee', value: _deliveryFee),
                   const Divider(height: 24),
                   _PriceRow(label: 'Total', value: _total, isBold: true),
                 ],
@@ -529,8 +703,9 @@ class _ServiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final unitType = service.pricePerKg != null ? 'per kg' : 'per piece';
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           Expanded(
@@ -543,32 +718,57 @@ class _ServiceTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '\$${service.pricePerPiece.toStringAsFixed(2)} per piece',
+                  '\$${service.pricePerPiece.toStringAsFixed(2)} $unitType',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline),
-                onPressed: quantity > 0
-                    ? () => onQuantityChanged(quantity - 1)
-                    : null,
-              ),
-              Text(
-                '$quantity',
-                style: theme.textTheme.titleMedium,
-              ),
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline),
-                onPressed: () => onQuantityChanged(quantity + 1),
-              ),
-            ],
+          _QuantityControls(
+            quantity: quantity,
+            onChanged: onQuantityChanged,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Compact − qty + controls used in both the services list and the cart.
+class _QuantityControls extends StatelessWidget {
+  final int quantity;
+  final ValueChanged<int> onChanged;
+
+  const _QuantityControls({
+    required this.quantity,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: quantity > 0 ? () => onChanged(quantity - 1) : null,
+        ),
+        SizedBox(
+          width: 28,
+          child: Text(
+            '$quantity',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium,
+          ),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => onChanged(quantity + 1),
+        ),
+      ],
     );
   }
 }

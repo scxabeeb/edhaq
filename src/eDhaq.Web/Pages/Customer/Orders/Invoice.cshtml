@@ -38,7 +38,10 @@ else
             </table>
             <div class="text-end">
                 <div>Subtotal: <strong>@Model.Order.SubTotal.ToString("C")</strong></div>
-                <div>Delivery: <strong>@Model.Order.DeliveryFee.ToString("C")</strong></div>
+                @if (Model.Order.DeliveryFee > 0)
+                {
+                    <div>Delivery: <strong>@Model.Order.DeliveryFee.ToString("C")</strong></div>
+                }
                 <div>Discount: <strong>@Model.Order.Discount.ToString("C")</strong></div>
                 <div class="fs-5">Total: <strong>@Model.Order.TotalAmount.ToString("C")</strong></div>
             </div>

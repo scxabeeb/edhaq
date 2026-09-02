@@ -376,8 +376,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               child: Column(
                 children: [
                   _PriceRow(label: 'Subtotal', value: order.subTotal),
-                  const SizedBox(height: 8),
-                  _PriceRow(label: 'Delivery Fee', value: order.deliveryFee),
+                  if (order.deliveryFee > 0) ...[
+                    const SizedBox(height: 8),
+                    _PriceRow(label: 'Delivery Fee', value: order.deliveryFee),
+                  ],
                   if (order.discount > 0) ...[
                     const SizedBox(height: 8),
                     _PriceRow(

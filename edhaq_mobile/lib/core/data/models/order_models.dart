@@ -515,7 +515,8 @@ class OrderDetailModel extends Equatable {
         paymentMethod:
             PaymentMethodExtension.fromString(json['paymentMethod'] as String?),
         subTotal: _toDouble(json['subTotal']),
-        deliveryFee: _toDouble(json['deliveryFee']),
+        // Delivery fee is removed everywhere — always zero in the app.
+        deliveryFee: 0,
         discount: _toDouble(json['discount']),
         totalAmount: _toDouble(json['totalAmount']),
         specialInstructions: json['specialInstructions'] as String?,
