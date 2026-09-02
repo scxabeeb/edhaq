@@ -117,10 +117,12 @@ public class AuthController : ApiControllerBase
         var createResult = await _userManager.CreateAsync(user, request.Password);
         if (!createResult.Succeeded)
         {
+            var errors = createResult.Errors.Select(e => e.Description).ToList();
+            var primary = errors.FirstOrDefault() ?? "Unable to create account.";
             return BadRequest(new ProblemDetails
             {
-                Title = "Unable to create account.",
-                Detail = string.Join(" | ", createResult.Errors.Select(e => e.Description))
+                Title = primary,
+                Detail = errors.Count > 1 ? string.Join(" | ", errors) : null
             });
         }
 

@@ -40,11 +40,15 @@ String? _extractMessage(DioException exception) {
   final data = exception.response?.data;
   if (data is Map<String, dynamic>) {
     // ProblemDetails (RFC 7807): { title, detail, ... }
-    if (data['title'] is String && (data['title'] as String).isNotEmpty) {
-      return data['title'] as String;
+    // Prefer `detail` — it carries the specific cause (e.g. Identity errors
+    // like "Email 'x' is already taken."); `title` alone is often generic.
+    final title = data['title'] is String ? data['title'] as String : null;
+    final detail = data['detail'] is String ? data['detail'] as String : null;
+    if (detail != null && detail.isNotEmpty) {
+      return detail;
     }
-    if (data['detail'] is String && (data['detail'] as String).isNotEmpty) {
-      return data['detail'] as String;
+    if (title != null && title.isNotEmpty) {
+      return title;
     }
     if (data['message'] is String) {
       return data['message'] as String;
