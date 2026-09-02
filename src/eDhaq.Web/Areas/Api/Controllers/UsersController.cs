@@ -71,4 +71,25 @@ public class UsersController : ApiControllerBase
 
         return result;
     }
+
+    /// <summary>
+    /// Deletes a user account by id (Administrator/Manager only).
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+            return NotFound(new ProblemDetails { Title = "User not found." });
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Unable to delete user.",
+                Detail = string.Join(" | ", result.Errors.Select(e => e.Description))
+            });
+
+        return Ok(new { message = "User deleted." });
+    }
 }
