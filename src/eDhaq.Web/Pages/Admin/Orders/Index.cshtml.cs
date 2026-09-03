@@ -442,6 +442,16 @@ public class IndexModel : PageModel
     {
         var driverRoles = new[] { AppRoles.PickupDriver, AppRoles.DeliveryDriver };
 
+        // TEMP DIAGNOSTICS
+        var allRoleNames = await _db.Roles.Select(r => r.Name).ToListAsync();
+        _logger.LogInformation("DIAG Roles in DB: [{Roles}] | constants: Pickup='{P}' Delivery='{D}'",
+            string.Join(",", allRoleNames), AppRoles.PickupDriver, AppRoles.DeliveryDriver);
+        var allUserRoles = await _db.UserRoles
+            .Join(_db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+            .ToListAsync();
+        _logger.LogInformation("DIAG UserRoles: {UR}",
+            string.Join(";", allUserRoles.Select(x => $"{x.UserId}:{x.RoleName}")));
+
         // Users that actually have a driver role.
         var driverRoleUserIds = await _db.Users
             .Join(_db.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
