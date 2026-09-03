@@ -75,15 +75,40 @@ public static class DbInitializer
         var existingAdmin = await userManager.FindByEmailAsync(email);
         if (existingAdmin is not null)
         {
-            // Delete existing user to ensure a clean password hash
-            logger.LogInformation("Admin user already exists, deleting and recreating: {Email}", email);
-            var deleteResult = await userManager.DeleteAsync(existingAdmin);
-            if (!deleteResult.Succeeded)
+            // Do NOT delete/recreate: AuditLogs (and other tables) reference Users.Id,
+            // so deleting the user violates the FK and crashes startup. Update in place.
+            logger.LogInformation("Admin user already exists, ensuring password/role/profile: {Email}", email);
+
+            // Reset password to the known default.
+            var token = await userManager.GeneratePasswordResetTokenAsync(existingAdmin);
+            await userManager.ResetPasswordAsync(existingAdmin, token, "Admin@123!");
+
+            existingAdmin.IsActive = true;
+            existingAdmin.EmailConfirmed = true;
+            await userManager.UpdateAsync(existingAdmin);
+
+            if (!await userManager.IsInRoleAsync(existingAdmin, AppRoles.Administrator))
             {
-                var errors = string.Join(", ", deleteResult.Errors.Select(e => e.Description));
-                logger.LogError("Failed to delete existing admin user: {Errors}", errors);
-                return;
+                await userManager.AddToRoleAsync(existingAdmin, AppRoles.Administrator);
             }
+
+            // Ensure an Employee profile exists.
+            var hasEmployee = await db.Employees.AnyAsync(e => e.UserId == existingAdmin.Id);
+            if (!hasEmployee)
+            {
+                db.Employees.Add(new Employee
+                {
+                    UserId = existingAdmin.Id,
+                    Position = "Administrator",
+                    Department = "Management",
+                    HireDate = DateTime.UtcNow,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            logger.LogInformation("Seeded admin user: {Email} / Admin@123!", email);
+            return;
         }
 
         var admin = new ApplicationUser
@@ -131,14 +156,35 @@ public static class DbInitializer
         var existingCustomer = await userManager.FindByEmailAsync(email);
         if (existingCustomer is not null)
         {
-            logger.LogInformation("Demo customer already exists, deleting and recreating: {Email}", email);
-            var deleteResult = await userManager.DeleteAsync(existingCustomer);
-            if (!deleteResult.Succeeded)
+            // Do NOT delete/recreate: AuditLogs (and other tables) reference Users.Id.
+            // Update in place instead.
+            logger.LogInformation("Demo customer already exists, ensuring password/role/profile: {Email}", email);
+
+            var token = await userManager.GeneratePasswordResetTokenAsync(existingCustomer);
+            await userManager.ResetPasswordAsync(existingCustomer, token, "Customer@123!");
+
+            existingCustomer.IsActive = true;
+            existingCustomer.EmailConfirmed = true;
+            await userManager.UpdateAsync(existingCustomer);
+
+            if (!await userManager.IsInRoleAsync(existingCustomer, AppRoles.Customer))
             {
-                var errors = string.Join(", ", deleteResult.Errors.Select(e => e.Description));
-                logger.LogError("Failed to delete existing demo customer: {Errors}", errors);
-                return;
+                await userManager.AddToRoleAsync(existingCustomer, AppRoles.Customer);
             }
+
+            var hasCustomer = await db.Customers.AnyAsync(c => c.UserId == existingCustomer.Id);
+            if (!hasCustomer)
+            {
+                db.Customers.Add(new Customer
+                {
+                    UserId = existingCustomer.Id,
+                    ReferralCode = $"EDQ{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            logger.LogInformation("Seeded demo customer: {Email} / Customer@123!", email);
+            return;
         }
 
         var customerUser = new ApplicationUser
