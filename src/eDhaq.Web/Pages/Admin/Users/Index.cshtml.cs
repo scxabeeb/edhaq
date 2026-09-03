@@ -31,14 +31,13 @@ public class IndexModel : PageModel
     public List<UserRow> Users { get; private set; } = [];
     public List<string> Roles { get; private set; } = [];
 
-    [BindProperty(SupportsGet = true)]
-    public int PageNumber { get; set; } = 1;
+    // Read from the query string in OnGetAsync (no [BindProperty]) so POST handlers
+    // don't get these values bound from route/form data and invalidate ModelState.
+    public int PageNumber { get; private set; } = 1;
 
-    [BindProperty(SupportsGet = true)]
-    public string? Search { get; set; }
+    public string? Search { get; private set; }
 
-    [BindProperty(SupportsGet = true)]
-    public string? RoleFilter { get; set; }
+    public string? RoleFilter { get; private set; }
 
     public int PageSize { get; } = 20;
     public int TotalCount { get; private set; }
@@ -119,6 +118,13 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        // Read paging/search/filter from the query string only.
+        PageNumber = int.TryParse(Request.Query["PageNumber"], out var pn) ? Math.Max(1, pn) : 1;
+        Search = Request.Query["Search"].ToString();
+        RoleFilter = Request.Query["RoleFilter"].ToString();
+        if (string.IsNullOrWhiteSpace(RoleFilter)) RoleFilter = null;
+        if (string.IsNullOrWhiteSpace(Search)) Search = null;
+
         Roles = AppRoles.All.ToList();
         var baseQuery = _userManager.Users
             .Include(x => x.Customer)
@@ -138,10 +144,15 @@ public class IndexModel : PageModel
         if (!string.IsNullOrWhiteSpace(RoleFilter))
         {
             var roleName = RoleFilter.Trim();
+            // "Drivers" tab should include BOTH pickup and delivery drivers.
+            var roleNames = roleName.Equals(AppRoles.PickupDriver, StringComparison.OrdinalIgnoreCase)
+                ? new[] { AppRoles.PickupDriver, AppRoles.DeliveryDriver }
+                : new[] { roleName };
+
             var roleUserIds = await (
                 from ur in _db.UserRoles
                 join role in _db.Roles on ur.RoleId equals role.Id
-                where role.Name == roleName
+                where roleNames.Contains(role.Name!)
                 select ur.UserId)
                 .ToListAsync();
 
