@@ -33,11 +33,13 @@ public class IndexModel : PageModel
 
     private readonly AppDbContext _db;
     private readonly IOrderService _orderService;
+    private readonly ILogger<IndexModel> _logger;
 
-    public IndexModel(AppDbContext db, IOrderService orderService)
+    public IndexModel(AppDbContext db, IOrderService orderService, ILogger<IndexModel> logger)
     {
         _db = db;
         _orderService = orderService;
+        _logger = logger;
     }
 
     public List<Order> Orders { get; private set; } = [];
@@ -441,6 +443,18 @@ public class IndexModel : PageModel
         var driverRoles = new[] { AppRoles.PickupDriver, AppRoles.DeliveryDriver };
         var existingDriverUserIds = await _db.Drivers.Select(d => d.UserId).ToListAsync();
 
+        var allDriverRoleUsers = await _db.Users
+            .Join(_db.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
+            .Join(_db.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new { x.u, RoleName = r.Name })
+            .Where(x => driverRoles.Contains(x.RoleName!))
+            .Select(x => new { x.u.Id, x.u.Email, x.RoleName })
+            .Distinct()
+            .ToListAsync();
+
+        _logger.LogInformation("EnsureDriverProfiles: existingDriverUserIds=[{Existing}], driverRoleUsers=[{Users}]",
+            string.Join(",", existingDriverUserIds),
+            string.Join(";", allDriverRoleUsers.Select(x => $"{x.Email}({x.RoleName})")));
+
         var driverUsers = await _db.Users
             .Join(_db.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
             .Join(_db.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new { x.u, RoleName = r.Name })
@@ -448,6 +462,8 @@ public class IndexModel : PageModel
             .Select(x => x.u)
             .Distinct()
             .ToListAsync();
+
+        _logger.LogInformation("EnsureDriverProfiles: creating {Count} missing driver profiles", driverUsers.Count);
 
         if (driverUsers.Count > 0)
         {
