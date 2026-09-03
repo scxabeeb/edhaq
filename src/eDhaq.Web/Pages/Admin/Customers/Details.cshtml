@@ -1,0 +1,91 @@
+@page "{id:int}"
+@model eDhaq.Web.Pages.Admin.Customers.DetailsModel
+@using eDhaq.Models.Enums
+@{
+    ViewData["Title"] = "Customer Details";
+    var c = Model.Customer!;
+    string StatusBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.Completed or OrderStatus.CustomerConfirmed => "success",
+        OrderStatus.Cancelled => "danger",
+        OrderStatus.OrderPlaced => "warning",
+        _ => "primary"
+    };
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <a asp-page="./Index" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left"></i> Back to Customers</a>
+        <h2 class="page-title mb-1 mt-1">@c.User.FirstName @c.User.LastName</h2>
+        <p class="text-muted mb-0" style="font-size:.9rem">@c.User.Email @(string.IsNullOrEmpty(c.User.PhoneNumber) ? "" : $"· {c.User.PhoneNumber}")</p>
+    </div>
+    <span class="badge @(c.User.IsActive ? "text-bg-success" : "text-bg-secondary") fs-6">@(c.User.IsActive ? "Active" : "Disabled")</span>
+</div>
+
+<!-- Performance cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2"><div class="stat-card stat-primary"><div class="stat-body"><span class="stat-label">Total Orders</span><h4 class="stat-value">@Model.TotalOrders</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-success"><div class="stat-body"><span class="stat-label">Completed</span><h4 class="stat-value">@Model.CompletedOrders</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Pending</span><h4 class="stat-value">@Model.PendingOrders</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-danger"><div class="stat-body"><span class="stat-label">Cancelled</span><h4 class="stat-value">@Model.CancelledOrders</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-blue"><div class="stat-body"><span class="stat-label">Total Spent</span><h4 class="stat-value">@Model.TotalSpent.ToString("C")</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-info"><div class="stat-body"><span class="stat-label">Avg Order</span><h4 class="stat-value">@Model.AvgOrderValue.ToString("C")</h4></div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3"><span class="fw-semibold">Order History</span></div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Order #</th><th>Date</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var o in Model.Orders)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@o.OrderNumber</td>
+                            <td class="text-muted small">@o.CreatedAt.ToString("MMM d, yyyy")</td>
+                            <td><span class="badge text-bg-light border">@o.Items.Count</span></td>
+                            <td class="fw-semibold">@o.TotalAmount.ToString("C")</td>
+                            <td class="text-muted small">@o.PaymentMethod · @o.PaymentStatus</td>
+                            <td><span class="badge text-bg-@StatusBadge(o.Status)">@o.Status</span></td>
+                        </tr>
+                    }
+                    @if (Model.Orders.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No orders yet.</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-0 pt-3"><span class="fw-semibold">Profile</span></div>
+            <div class="card-body pt-2">
+                <div class="mb-2"><span class="text-muted small">Wallet Balance</span><div class="fw-semibold">@c.WalletBalance.ToString("C")</div></div>
+                <div class="mb-2"><span class="text-muted small">Referral Code</span><div class="fw-semibold">@(c.ReferralCode ?? "—")</div></div>
+                <div class="mb-2"><span class="text-muted small">Member Since</span><div class="fw-semibold">@c.CreatedAt.ToString("MMM d, yyyy")</div></div>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3"><span class="fw-semibold">Addresses (@c.Addresses.Count)</span></div>
+            <div class="card-body pt-2">
+                @foreach (var a in c.Addresses)
+                {
+                    <div class="border rounded p-2 mb-2 small">
+                        <div class="fw-semibold">@a.Label</div>
+                        <div class="text-muted">@a.Street@(a.Village != null ? $", {a.Village.Name}" : "")@(a.City != null ? $", {a.City.Name}" : "")</div>
+                    </div>
+                }
+                @if (c.Addresses.Count == 0)
+                {
+                    <div class="text-muted small">No saved addresses.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

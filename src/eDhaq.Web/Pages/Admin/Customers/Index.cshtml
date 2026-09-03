@@ -1,0 +1,142 @@
+@page
+@model eDhaq.Web.Pages.Admin.Customers.IndexModel
+@{
+    ViewData["Title"] = "Customers";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="page-title mb-1">Customers</h2>
+        <p class="text-muted mb-0" style="font-size:.9rem">@Model.TotalCount customer(s)</p>
+    </div>
+    <a class="btn btn-edhaq d-flex align-items-center gap-2" asp-page="/Admin/Users/Index">
+        <i class="bi bi-person-plus-fill"></i> Add Customer
+    </a>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div class="stat-body"><span class="stat-label">Total Customers</span><h4 class="stat-value">@Model.TotalCustomers</h4></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-person-check"></i></div>
+            <div class="stat-body"><span class="stat-label">Active</span><h4 class="stat-value">@Model.ActiveCustomers</h4></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-warning">
+            <div class="stat-icon"><i class="bi bi-basket2"></i></div>
+            <div class="stat-body"><span class="stat-label">Total Orders</span><h4 class="stat-value">@Model.TotalOrders</h4></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-success">
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-body"><span class="stat-label">Total Revenue</span><h4 class="stat-value">@Model.TotalRevenue.ToString("C")</h4></div>
+        </div>
+    </div>
+</div>
+
+<!-- Search -->
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:480px">
+        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, email or phone..." />
+        <button type="submit" class="btn btn-edhaq">Search</button>
+        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+        {
+            <a class="btn btn-outline-secondary" asp-page="./Index" title="Clear"><i class="bi bi-x-lg"></i></a>
+        }
+    </div>
+</form>
+
+<!-- Customers table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th>Orders</th>
+                    <th>Completed</th>
+                    <th>Total Spent</th>
+                    <th>Last Order</th>
+                    <th>Status</th>
+                    <th class="text-end">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.Customers)
+            {
+                <tr>
+                    <td>
+                        <div class="fw-semibold">@c.FullName</div>
+                        <div class="text-muted small">Joined @c.JoinedAt.ToString("MMM d, yyyy")</div>
+                    </td>
+                    <td>
+                        <div class="text-muted small">@c.Email</div>
+                        @if (!string.IsNullOrEmpty(c.Phone))
+                        {
+                            <div class="text-muted small"><i class="bi bi-telephone"></i> @c.Phone</div>
+                        }
+                    </td>
+                    <td><span class="badge text-bg-light border">@c.OrderCount</span></td>
+                    <td>
+                        <span class="badge text-bg-success">@c.CompletedOrders</span>
+                        @if (c.CancelledOrders > 0)
+                        {
+                            <span class="badge text-bg-danger">@c.CancelledOrders cancelled</span>
+                        }
+                    </td>
+                    <td class="fw-semibold">@c.TotalSpent.ToString("C")</td>
+                    <td class="text-muted small">@(c.LastOrderAt?.ToString("MMM d, yyyy") ?? "—")</td>
+                    <td>
+                        @if (c.IsActive)
+                        {
+                            <span class="badge text-bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Disabled</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" asp-page="./Details" asp-route-id="@c.CustomerId">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+            }
+            @if (Model.Customers.Count == 0)
+            {
+                <tr><td colspan="8" class="text-center text-muted py-4">No customers found.</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-0 d-flex justify-content-center pb-3">
+            <nav><ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-q="@Model.SearchTerm">Prev</a>
+                </li>
+                @for (var i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                        <a class="page-link" asp-page="./Index" asp-route-pageNumber="@i" asp-route-q="@Model.SearchTerm">@i</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-q="@Model.SearchTerm">Next</a>
+                </li>
+            </ul></nav>
+        </div>
+    }
+</div>

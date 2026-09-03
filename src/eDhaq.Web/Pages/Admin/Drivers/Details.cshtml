@@ -1,0 +1,80 @@
+@page "{id:int}"
+@model eDhaq.Web.Pages.Admin.Drivers.DetailsModel
+@using eDhaq.Models.Enums
+@{
+    ViewData["Title"] = "Driver Details";
+    var d = Model.Driver!;
+    string JobBadge(DriverJobAction s) => s switch
+    {
+        DriverJobAction.Completed => "success",
+        DriverJobAction.Accepted => "primary",
+        DriverJobAction.Rejected => "danger",
+        _ => "warning"
+    };
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <a asp-page="./Index" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left"></i> Back to Drivers</a>
+        <h2 class="page-title mb-1 mt-1">@d.User.FirstName @d.User.LastName</h2>
+        <p class="text-muted mb-0" style="font-size:.9rem">@d.User.Email @(string.IsNullOrEmpty(d.User.PhoneNumber) ? "" : $"· {d.User.PhoneNumber}")</p>
+    </div>
+    <span class="badge @(d.IsAvailable ? "text-bg-success" : "text-bg-secondary") fs-6">@(d.IsAvailable ? "Available" : d.Status.ToString())</span>
+</div>
+
+<!-- Performance cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2"><div class="stat-card stat-primary"><div class="stat-body"><span class="stat-label">Assignments</span><h4 class="stat-value">@Model.TotalAssignments</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-success"><div class="stat-body"><span class="stat-label">Completed</span><h4 class="stat-value">@Model.CompletedCount</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Pending</span><h4 class="stat-value">@Model.PendingCount</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-blue"><div class="stat-body"><span class="stat-label">Accepted</span><h4 class="stat-value">@Model.AcceptedCount</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-info"><div class="stat-body"><span class="stat-label">Completion</span><h4 class="stat-value">@Model.CompletionRate.ToString("0")%</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Earnings</span><h4 class="stat-value">@d.TotalEarnings.ToString("C")</h4></div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3"><span class="fw-semibold">Assignment History</span></div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Order #</th><th>Customer</th><th>Type</th><th>Assigned</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var a in Model.Assignments)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@a.Order.OrderNumber</td>
+                            <td class="text-muted small">@a.Order.Customer.User.FirstName @a.Order.Customer.User.LastName</td>
+                            <td><span class="badge text-bg-light border">@(a.IsPickup ? "Pickup" : "Delivery")</span></td>
+                            <td class="text-muted small">@a.AssignedAt.ToString("MMM d, yyyy HH:mm")</td>
+                            <td><span class="badge text-bg-@JobBadge(a.Status)">@a.Status</span></td>
+                        </tr>
+                    }
+                    @if (Model.Assignments.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">No assignments yet.</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3"><span class="fw-semibold">Profile</span></div>
+            <div class="card-body pt-2">
+                <div class="mb-2"><span class="text-muted small">Vehicle</span><div class="fw-semibold">@(d.VehicleModel ?? "—")</div></div>
+                <div class="mb-2"><span class="text-muted small">License Plate</span><div class="fw-semibold">@(d.LicensePlate ?? "—")</div></div>
+                <div class="mb-2"><span class="text-muted small">Rating</span><div class="fw-semibold">@d.Rating.ToString("0.0") / 5</div></div>
+                <div class="mb-2"><span class="text-muted small">Status</span><div class="fw-semibold">@d.Status</div></div>
+                <div class="mb-2"><span class="text-muted small">Joined</span><div class="fw-semibold">@d.CreatedAt.ToString("MMM d, yyyy")</div></div>
+                @if (d.LastLocationUpdate.HasValue)
+                {
+                    <div class="mb-2"><span class="text-muted small">Last Location Update</span><div class="fw-semibold">@d.LastLocationUpdate.Value.ToString("MMM d, HH:mm")</div></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
