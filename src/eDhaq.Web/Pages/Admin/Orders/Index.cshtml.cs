@@ -442,28 +442,21 @@ public class IndexModel : PageModel
     {
         var driverRoles = new[] { AppRoles.PickupDriver, AppRoles.DeliveryDriver };
 
-        // TEMP DIAGNOSTICS
-        var allRoleNames = await _db.Roles.Select(r => r.Name).ToListAsync();
-        _logger.LogInformation("DIAG Roles in DB: [{Roles}] | constants: Pickup='{P}' Delivery='{D}'",
-            string.Join(",", allRoleNames), AppRoles.PickupDriver, AppRoles.DeliveryDriver);
-        var allUserRoles = await _db.UserRoles
-            .Join(_db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+        // Robust lookup: get the driver role IDs, then the user IDs in those roles.
+        var driverRoleIds = await _db.Roles
+            .Where(r => r.Name != null && driverRoles.Contains(r.Name))
+            .Select(r => r.Id)
             .ToListAsync();
-        _logger.LogInformation("DIAG UserRoles: {UR}",
-            string.Join(";", allUserRoles.Select(x => $"{x.UserId}:{x.RoleName}")));
 
-        // Users that actually have a driver role.
-        var driverRoleUserIds = await _db.Users
-            .Join(_db.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
-            .Join(_db.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new { x.u, RoleName = r.Name })
-            .Where(x => driverRoles.Contains(x.RoleName!))
-            .Select(x => x.u.Id)
+        var driverRoleUserIds = await _db.UserRoles
+            .Where(ur => driverRoleIds.Contains(ur.RoleId))
+            .Select(ur => ur.UserId)
             .Distinct()
             .ToListAsync();
 
-        // Remove orphaned Driver rows whose UserId is not a current driver-role user
-        // (e.g. rows left pointing at the admin or deleted users). These corrupt the
-        // dropdown and block correct profiles from being created.
+        _logger.LogInformation("EnsureDriverProfiles: driverRoleUserIds=[{Ids}]", string.Join(",", driverRoleUserIds));
+
+        // Remove orphaned Driver rows whose UserId is not a current driver-role user.
         var orphaned = await _db.Drivers
             .Where(d => !driverRoleUserIds.Contains(d.UserId))
             .ToListAsync();
