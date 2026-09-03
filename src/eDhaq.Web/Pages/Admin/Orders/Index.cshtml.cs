@@ -441,43 +441,46 @@ public class IndexModel : PageModel
     private async Task EnsureDriverProfilesAsync()
     {
         var driverRoles = new[] { AppRoles.PickupDriver, AppRoles.DeliveryDriver };
-        var existingDriverUserIds = await _db.Drivers.Select(d => d.UserId).ToListAsync();
 
-        var allDriverRoleUsers = await _db.Users
+        // Users that actually have a driver role.
+        var driverRoleUserIds = await _db.Users
             .Join(_db.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
             .Join(_db.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new { x.u, RoleName = r.Name })
             .Where(x => driverRoles.Contains(x.RoleName!))
-            .Select(x => new { x.u.Id, x.u.Email, x.RoleName })
+            .Select(x => x.u.Id)
             .Distinct()
             .ToListAsync();
 
-        _logger.LogInformation("EnsureDriverProfiles: existingDriverUserIds=[{Existing}], driverRoleUsers=[{Users}]",
-            string.Join(",", existingDriverUserIds),
-            string.Join(";", allDriverRoleUsers.Select(x => $"{x.Email}({x.RoleName})")));
-
-        var driverUsers = await _db.Users
-            .Join(_db.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
-            .Join(_db.Roles, x => x.ur.RoleId, r => r.Id, (x, r) => new { x.u, RoleName = r.Name })
-            .Where(x => driverRoles.Contains(x.RoleName!) && !existingDriverUserIds.Contains(x.u.Id))
-            .Select(x => x.u)
-            .Distinct()
+        // Remove orphaned Driver rows whose UserId is not a current driver-role user
+        // (e.g. rows left pointing at the admin or deleted users). These corrupt the
+        // dropdown and block correct profiles from being created.
+        var orphaned = await _db.Drivers
+            .Where(d => !driverRoleUserIds.Contains(d.UserId))
             .ToListAsync();
-
-        _logger.LogInformation("EnsureDriverProfiles: creating {Count} missing driver profiles", driverUsers.Count);
-
-        if (driverUsers.Count > 0)
+        if (orphaned.Count > 0)
         {
-            foreach (var u in driverUsers)
+            _db.Drivers.RemoveRange(orphaned);
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("EnsureDriverProfiles: removed {Count} orphaned driver rows", orphaned.Count);
+        }
+
+        // Create profiles for driver-role users that don't have one yet.
+        var existingDriverUserIds = await _db.Drivers.Select(d => d.UserId).ToListAsync();
+        var missingUserIds = driverRoleUserIds.Except(existingDriverUserIds).ToList();
+        if (missingUserIds.Count > 0)
+        {
+            foreach (var userId in missingUserIds)
             {
                 _db.Drivers.Add(new DriverEntity
                 {
-                    UserId      = u.Id,
+                    UserId      = userId,
                     Status      = DriverStatus.Offline,
                     IsAvailable = false,
                     CreatedAt   = DateTime.UtcNow
                 });
             }
             await _db.SaveChangesAsync();
+            _logger.LogInformation("EnsureDriverProfiles: created {Count} driver profiles", missingUserIds.Count);
         }
     }
 }
