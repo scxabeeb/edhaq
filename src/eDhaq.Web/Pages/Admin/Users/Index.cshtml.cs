@@ -441,6 +441,34 @@ public class IndexModel : PageModel
         return RedirectToPage();
     }
 
+    // ── RESET PASSWORD ───────────────────────────────────────────────────
+    public async Task<IActionResult> OnPostResetPasswordAsync(string userId, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+        {
+            TempData["ErrorMessage"] = "Password must be at least 8 characters.";
+            return RedirectToPage();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            TempData["ErrorMessage"] = "User not found.";
+            return RedirectToPage();
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = string.Join(" ", result.Errors.Select(e => e.Description));
+            return RedirectToPage();
+        }
+
+        TempData["SuccessMessage"] = $"Password reset for {user.Email}.";
+        return RedirectToPage();
+    }
+
     public class UserRow
     {
         public string UserId { get; set; } = string.Empty;
