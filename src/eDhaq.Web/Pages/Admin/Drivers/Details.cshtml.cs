@@ -56,4 +56,34 @@ public class DetailsModel : PageModel
 
         return Page();
     }
+
+    // ── MANAGE ASSIGNMENT STATUS ─────────────────────────────────────────
+    public async Task<IActionResult> OnPostSetAssignmentStatusAsync(int assignmentId, DriverJobAction status, int driverId)
+    {
+        var assignment = await _db.DriverAssignments
+            .Include(a => a.Order)
+            .FirstOrDefaultAsync(a => a.Id == assignmentId && a.DriverId == driverId);
+
+        if (assignment is null)
+        {
+            TempData["ErrorMessage"] = "Assignment not found.";
+            return RedirectToPage(new { id = driverId });
+        }
+
+        assignment.Status = status;
+        if (status == DriverJobAction.Accepted) assignment.AcceptedAt = DateTime.UtcNow;
+        if (status == DriverJobAction.Completed) assignment.CompletedAt = DateTime.UtcNow;
+
+        // Keep driver completed-deliveries counter in sync.
+        var driver = await _db.Drivers.FindAsync(driverId);
+        if (driver is not null)
+        {
+            driver.CompletedDeliveries = await _db.DriverAssignments
+                .CountAsync(a => a.DriverId == driverId && a.Status == DriverJobAction.Completed);
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"Assignment for {assignment.Order.OrderNumber} marked {status}.";
+        return RedirectToPage(new { id = driverId });
+    }
 }

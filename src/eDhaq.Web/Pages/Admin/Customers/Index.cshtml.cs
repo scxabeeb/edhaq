@@ -1,6 +1,8 @@
 using eDhaq.Data;
+using eDhaq.Models.Entities;
 using eDhaq.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +13,12 @@ namespace eDhaq.Web.Pages.Admin.Customers;
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public IndexModel(AppDbContext db)
+    public IndexModel(AppDbContext db, UserManager<ApplicationUser> userManager)
     {
         _db = db;
+        _userManager = userManager;
     }
 
     public List<CustomerRow> Customers { get; private set; } = [];
@@ -107,5 +111,54 @@ public class IndexModel : PageModel
         public int CancelledOrders { get; set; }
         public decimal TotalSpent { get; set; }
         public DateTime? LastOrderAt { get; set; }
+    }
+
+    // ── MANAGEMENT ───────────────────────────────────────────────────────
+    public async Task<IActionResult> OnPostToggleActiveAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            TempData["ErrorMessage"] = "Customer not found.";
+            return RedirectToPage();
+        }
+        if (user.Email == User.Identity?.Name)
+        {
+            TempData["ErrorMessage"] = "You cannot disable your own account.";
+            return RedirectToPage();
+        }
+        user.IsActive = !user.IsActive;
+        await _userManager.UpdateAsync(user);
+        TempData["SuccessMessage"] = user.IsActive ? $"{user.Email} activated." : $"{user.Email} deactivated.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        var customer = await _db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == id);
+        if (customer is null)
+        {
+            TempData["ErrorMessage"] = "Customer not found.";
+            return RedirectToPage();
+        }
+
+        var hasOrders = await _db.Orders.AnyAsync(o => o.CustomerId == id);
+        if (hasOrders)
+        {
+            TempData["ErrorMessage"] = "Customers with orders cannot be deleted. Deactivate the account instead.";
+            return RedirectToPage();
+        }
+
+        var user = customer.User;
+        _db.Customers.Remove(customer);
+        var notifications = await _db.Notifications.Where(x => x.UserId == user.Id).ToListAsync();
+        if (notifications.Count > 0) _db.Notifications.RemoveRange(notifications);
+        var auditLogs = await _db.AuditLogs.Where(x => x.UserId == user.Id).ToListAsync();
+        if (auditLogs.Count > 0) _db.AuditLogs.RemoveRange(auditLogs);
+        await _db.SaveChangesAsync();
+
+        await _userManager.DeleteAsync(user);
+        TempData["SuccessMessage"] = $"Customer '{user.Email}' deleted.";
+        return RedirectToPage();
     }
 }

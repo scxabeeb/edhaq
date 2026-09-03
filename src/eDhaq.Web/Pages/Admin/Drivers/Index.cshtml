@@ -104,9 +104,26 @@
                     </td>
                     <td class="fw-semibold">@d.TotalEarnings.ToString("C")</td>
                     <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" asp-page="./Details" asp-route-id="@d.DriverId">
-                            <i class="bi bi-eye"></i> View
-                        </a>
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-page="./Details" asp-route-id="@d.DriverId" title="View details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@d.DriverId">
+                                <button type="submit" class="btn btn-sm @(d.IsAvailable ? "btn-outline-success" : "btn-outline-secondary")" title="@(d.IsAvailable ? "Mark offline" : "Mark available")">
+                                    <i class="bi @(d.IsAvailable ? "bi-broadcast" : "bi-broadcast-pin")"></i>
+                                </button>
+                            </form>
+                            <form method="post" asp-page-handler="ToggleActive" asp-route-userId="@d.UserId">
+                                <button type="submit" class="btn btn-sm @(d.IsActive ? "btn-outline-warning" : "btn-outline-success")" title="@(d.IsActive ? "Deactivate" : "Activate")">
+                                    <i class="bi @(d.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                </button>
+                            </form>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@d.DriverId" onsubmit="return confirm('Delete driver @d.FullName? This cannot be undone.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }

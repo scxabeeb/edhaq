@@ -1,7 +1,10 @@
 using eDhaq.Common.Constants;
 using eDhaq.Data;
+using eDhaq.Models.Entities;
 using eDhaq.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using DriverEntity = eDhaq.Models.Entities.Driver;
@@ -12,11 +15,13 @@ namespace eDhaq.Web.Pages.Admin.Drivers;
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<IndexModel> _logger;
 
-    public IndexModel(AppDbContext db, ILogger<IndexModel> logger)
+    public IndexModel(AppDbContext db, UserManager<ApplicationUser> userManager, ILogger<IndexModel> logger)
     {
         _db = db;
+        _userManager = userManager;
         _logger = logger;
     }
 
@@ -63,6 +68,7 @@ public class IndexModel : PageModel
             .Select(d => new DriverRow
             {
                 DriverId = d.Id,
+                UserId = d.UserId,
                 FullName = $"{d.User.FirstName} {d.User.LastName}".Trim(),
                 Email = d.User.Email ?? string.Empty,
                 Phone = d.User.PhoneNumber,
@@ -123,9 +129,74 @@ public class IndexModel : PageModel
         }
     }
 
+    // ── MANAGEMENT ───────────────────────────────────────────────────────
+    public async Task<IActionResult> OnPostToggleAvailabilityAsync(int id)
+    {
+        var driver = await _db.Drivers.FindAsync(id);
+        if (driver is null)
+        {
+            TempData["ErrorMessage"] = "Driver not found.";
+            return RedirectToPage();
+        }
+        driver.IsAvailable = !driver.IsAvailable;
+        driver.Status = driver.IsAvailable ? DriverStatus.Available : DriverStatus.Offline;
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = driver.IsAvailable ? "Driver marked available." : "Driver marked offline.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostToggleActiveAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            TempData["ErrorMessage"] = "Driver not found.";
+            return RedirectToPage();
+        }
+        if (user.Email == User.Identity?.Name)
+        {
+            TempData["ErrorMessage"] = "You cannot disable your own account.";
+            return RedirectToPage();
+        }
+        user.IsActive = !user.IsActive;
+        await _userManager.UpdateAsync(user);
+        TempData["SuccessMessage"] = user.IsActive ? $"{user.Email} activated." : $"{user.Email} deactivated.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        var driver = await _db.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.Id == id);
+        if (driver is null)
+        {
+            TempData["ErrorMessage"] = "Driver not found.";
+            return RedirectToPage();
+        }
+
+        var hasAssignments = await _db.DriverAssignments.AnyAsync(a => a.DriverId == id);
+        if (hasAssignments)
+        {
+            TempData["ErrorMessage"] = "Drivers with assignments cannot be deleted. Deactivate the account instead.";
+            return RedirectToPage();
+        }
+
+        var user = driver.User;
+        _db.Drivers.Remove(driver);
+        var notifications = await _db.Notifications.Where(x => x.UserId == user.Id).ToListAsync();
+        if (notifications.Count > 0) _db.Notifications.RemoveRange(notifications);
+        var auditLogs = await _db.AuditLogs.Where(x => x.UserId == user.Id).ToListAsync();
+        if (auditLogs.Count > 0) _db.AuditLogs.RemoveRange(auditLogs);
+        await _db.SaveChangesAsync();
+
+        await _userManager.DeleteAsync(user);
+        TempData["SuccessMessage"] = $"Driver '{user.Email}' deleted.";
+        return RedirectToPage();
+    }
+
     public class DriverRow
     {
         public int DriverId { get; set; }
+        public string UserId { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }

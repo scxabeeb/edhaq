@@ -107,9 +107,21 @@
                         }
                     </td>
                     <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" asp-page="./Details" asp-route-id="@c.CustomerId">
-                            <i class="bi bi-eye"></i> View
-                        </a>
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-page="./Details" asp-route-id="@c.CustomerId" title="View details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <form method="post" asp-page-handler="ToggleActive" asp-route-userId="@c.UserId">
+                                <button type="submit" class="btn btn-sm @(c.IsActive ? "btn-outline-warning" : "btn-outline-success")" title="@(c.IsActive ? "Deactivate" : "Activate")">
+                                    <i class="bi @(c.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                </button>
+                            </form>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@c.CustomerId" onsubmit="return confirm('Delete customer @c.FullName? This cannot be undone.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }
