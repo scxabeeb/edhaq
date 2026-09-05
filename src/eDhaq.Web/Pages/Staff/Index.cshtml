@@ -1,7 +1,23 @@
 @page
 @model eDhaq.Web.Pages.Staff.IndexModel
+@using eDhaq.Models.Enums
 @{
     ViewData["Title"] = "Laundry Staff Dashboard";
+
+    string StageColor(OrderStatus s) => s switch
+    {
+        OrderStatus.ClothesPickedUp => "#6B7280",
+        OrderStatus.LaundryReceived => "#64748B",
+        OrderStatus.Sorting => "#78716C",
+        OrderStatus.Washing => "#9333EA",
+        OrderStatus.DryCleaning => "#A855F7",
+        OrderStatus.Drying => "#C026D3",
+        OrderStatus.Ironing => "#DB2777",
+        OrderStatus.Folding => "#EC4899",
+        OrderStatus.Packaging => "#F472B6",
+        OrderStatus.ReadyForDelivery => "#14A44D",
+        _ => "#6B7280"
+    };
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -9,23 +25,71 @@
         <h2 class="page-title mb-1">Laundry Operations</h2>
         <p class="text-muted mb-0">Manage incoming loads and progress through processing stages.</p>
     </div>
+    <a class="btn btn-edhaq" asp-page="/Staff/Orders/Process">Intake & Processing</a>
 </div>
 
-<div class="metric-card mb-4">
-    <span>Incoming Orders Today</span>
-    <h4>@Model.IncomingOrders</h4>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Incoming Orders Today</span>
+            <h4>@Model.IncomingOrders</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Awaiting Intake</span>
+            <h4>@Model.AwaitingIntake</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>In Processing</span>
+            <h4>@Model.InProcessing</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Ready for Delivery</span>
+            <h4>@Model.ReadyForDelivery</h4>
+        </div>
+    </div>
 </div>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <h5 class="card-title">Workflow Stages</h5>
-        <div class="d-flex flex-wrap gap-2 mt-2">
-            <span class="badge text-bg-light">Received</span>
-            <span class="badge text-bg-light">Washing</span>
-            <span class="badge text-bg-light">Drying</span>
-            <span class="badge text-bg-light">Ironing</span>
-            <span class="badge text-bg-light">Packaging</span>
-            <span class="badge text-bg-light">Ready</span>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Workflow Stages</h5>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    @foreach (var stage in Model.WorkflowStages)
+                    {
+                        <span class="badge text-bg-light px-3 py-2" style="border-left: 4px solid @StageColor(stage.Key)">
+                            @stage.Key <strong>@stage.Value</strong>
+                        </span>
+                    }
+                    @if (!Model.WorkflowStages.Any())
+                    {
+                        <span class="text-muted small">No orders in the processing pipeline.</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="list-group list-group-flush mt-2">
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" asp-page="/Staff/Orders/Process">
+                        <span><i class="bi bi-box-seam me-2 text-muted"></i>Intake & Processing</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" asp-page="/Staff/Board/Index">
+                        <span><i class="bi bi-columns-gap me-2 text-muted"></i>Kanban Board</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
