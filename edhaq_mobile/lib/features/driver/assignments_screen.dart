@@ -22,6 +22,30 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
   bool _loadingMore = false;
   int _page = 1;
   bool _hasMore = true;
+  String _filter = 'new'; // 'new' | 'accepted' | 'completed'
+
+  List<DriverAssignmentDetailModel> get _newAssignments =>
+      _assignments.where((a) => a.action == DriverJobAction.pending).toList();
+
+  List<DriverAssignmentDetailModel> get _acceptedAssignments =>
+      _assignments.where((a) => a.action == DriverJobAction.accepted).toList();
+
+  List<DriverAssignmentDetailModel> get _completedAssignments => _assignments
+      .where((a) =>
+          a.action == DriverJobAction.completed ||
+          a.action == DriverJobAction.rejected)
+      .toList();
+
+  List<DriverAssignmentDetailModel> get _filteredAssignments {
+    switch (_filter) {
+      case 'accepted':
+        return _acceptedAssignments;
+      case 'completed':
+        return _completedAssignments;
+      default:
+        return _newAssignments;
+    }
+  }
 
   @override
   void initState() {
@@ -245,7 +269,103 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
                 ? _buildError(theme)
                 : _assignments.isEmpty
                     ? _buildEmpty(theme)
-                    : _buildAssignmentsList(theme),
+                    : _buildAssignmentsBody(theme),
+      ),
+    );
+  }
+
+  Widget _buildAssignmentsBody(ThemeData theme) {
+    return Column(
+      children: [
+        // Status filter chips
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              _buildFilterChip(
+                theme,
+                label: 'New',
+                count: _newAssignments.length,
+                value: 'new',
+                color: AppTheme.accentColor,
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                theme,
+                label: 'Accepted',
+                count: _acceptedAssignments.length,
+                value: 'accepted',
+                color: AppTheme.primaryColor,
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                theme,
+                label: 'Completed',
+                count: _completedAssignments.length,
+                value: 'completed',
+                color: AppTheme.secondaryColor,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _filteredAssignments.isEmpty
+              ? _buildEmpty(theme)
+              : _buildAssignmentsList(theme),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(
+    ThemeData theme, {
+    required String label,
+    required int count,
+    required String value,
+    required Color color,
+  }) {
+    final bool selected = _filter == value;
+    return Expanded(
+      child: ChoiceChip(
+        label: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: selected ? Colors.white : color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: selected ? color : AppTheme.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        selected: selected,
+        onSelected: (_) => setState(() => _filter = value),
+        selectedColor: color.withValues(alpha: 0.2),
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+        labelStyle: TextStyle(
+          fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+          color: selected ? color : AppTheme.textSecondary,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: selected ? color : Colors.transparent,
+          ),
+        ),
+        showCheckmark: false,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       ),
     );
   }
@@ -304,9 +424,9 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: _assignments.length + (_hasMore ? 1 : 0),
+      itemCount: _filteredAssignments.length + (_hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index >= _assignments.length) {
+        if (index >= _filteredAssignments.length) {
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Center(
@@ -320,7 +440,7 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
           );
         }
 
-        final assignment = _assignments[index];
+        final assignment = _filteredAssignments[index];
         return _AssignmentCard(
           assignment: assignment,
           onAccept: () => _acceptAssignment(assignment.id),
