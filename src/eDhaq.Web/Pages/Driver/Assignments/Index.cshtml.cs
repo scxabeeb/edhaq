@@ -191,6 +191,30 @@ public class IndexModel : PageModel
     public string GetCompletionLabel(DriverAssignment assignment)
         => assignment.IsPickup ? "Picked Up" : "Delivered";
 
+    /// <summary>
+    /// A delivery can only be completed once the pickup phase is done.
+    /// Pickup is considered complete when PickupActualAt is set, or when the
+    /// order has already advanced past the pickup stage in the workflow
+    /// (LaundryReceived onward) — which implies the clothes were picked up.
+    /// </summary>
+    private static bool IsPickupComplete(eDhaq.Models.Entities.Order order)
+    {
+        if (order.PickupActualAt.HasValue)
+        {
+            return true;
+        }
+
+        return order.Status switch
+        {
+            OrderStatus.LaundryReceived or OrderStatus.Sorting or OrderStatus.Washing or
+            OrderStatus.DryCleaning or OrderStatus.Drying or OrderStatus.Ironing or
+            OrderStatus.Folding or OrderStatus.Packaging or OrderStatus.ReadyForDelivery or
+            OrderStatus.OutForDelivery or OrderStatus.Delivered or OrderStatus.Completed or
+            OrderStatus.CustomerConfirmed => true,
+            _ => false
+        };
+    }
+
     private async Task<IActionResult> UpdateAssignmentStatusAsync(DriverJobAction action, bool addTrackingNote = false)
     {
         var assignment = await LoadAssignmentForCurrentUserAsync();
@@ -232,9 +256,9 @@ public class IndexModel : PageModel
 
         if (action == DriverJobAction.Completed)
         {
-            if (!assignment.IsPickup && !assignment.Order.PickupActualAt.HasValue)
+            if (!assignment.IsPickup && !IsPickupComplete(assignment.Order))
             {
-                TempData["ErrorMessage"] = "Pickup must be completed before delivery can be marked delivered.";
+                TempData["ErrorMessage"] = $"Pickup for order {assignment.Order.OrderNumber} must be completed before delivery can be marked delivered.";
                 return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
             }
 
@@ -299,6 +323,9 @@ public class IndexModel : PageModel
             else
             {
                 assignment.Order.DeliveryActualAt = DateTime.UtcNow;
+                // If pickup completed implicitly (order already advanced past
+                // the pickup stage), back-fill the pickup timestamp.
+                assignment.Order.PickupActualAt ??= DateTime.UtcNow;
             }
 
         }
