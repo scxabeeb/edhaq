@@ -1,0 +1,131 @@
+@page
+@model eDhaq.Web.Pages.Staff.Orders.DeliveryModel
+@using eDhaq.Models.Enums
+@using eDhaq.Models.Entities
+@{
+    ViewData["Title"] = "Delivery List";
+
+    string BadgeForDriverStatus(DriverJobAction s) => s switch
+    {
+        DriverJobAction.Pending => "text-bg-warning",
+        DriverJobAction.Accepted => "text-bg-info",
+        DriverJobAction.Completed => "text-bg-success",
+        DriverJobAction.Rejected => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Delivery List</h2>
+        <p class="text-muted mb-0">Track delivery assignments from assignment to completion.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" asp-page="/Staff/Orders/Placed">Placed Orders</a>
+        <a class="btn btn-outline-dark" asp-page="/Staff/Orders/Pickup">Pickup List</a>
+        <a class="btn btn-edhaq" asp-page="/Staff/Orders/Process">Intake & Processing</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="metric-card"><span>Pending</span><h4>@Model.PendingCount</h4></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card"><span>Accepted</span><h4>@Model.AcceptedCount</h4></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card"><span>Completed</span><h4>@Model.CompletedCount</h4></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card"><span>Rejected</span><h4>@Model.RejectedCount</h4></div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Delivery Address</th>
+                    <th>Driver</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Proof</th>
+                </tr>
+                </thead>
+@foreach (var assignment in Model.DeliveryAssignments)
+                {
+                    var order = assignment.Order;
+                    <tr>
+                        <td><a asp-page="/Staff/Orders/Process" asp-route-StatusFilter="@order.Status">@order.OrderNumber</a></td>
+                        <td>@order.Customer.User.FirstName @order.Customer.User.LastName</td>
+                        <td class="small">
+                            @if (order.DeliveryAddress is not null)
+                            {
+                                <span>@order.DeliveryAddress.Street, @order.DeliveryAddress.District</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No address</span>
+                            }
+                        </td>
+                        <td>
+                            @if (assignment.Driver?.User is not null)
+                            {
+                                <span>@assignment.Driver.User.FirstName @assignment.Driver.User.LastName</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Unknown</span>
+                            }
+                        </td>
+                        <td><span class="badge @BadgeForDriverStatus(assignment.Status)">@assignment.Status</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1" style="min-width:200px;">
+                                <span class="badge @(assignment.Status >= DriverJobAction.Pending ? "bg-success" : "bg-secondary")">
+                                    <i class="bi bi-@(assignment.Status >= DriverJobAction.Pending ? "check" : "circle")"></i> Assigned
+                                </span>
+                                <span class="badge @(assignment.Status >= DriverJobAction.Accepted ? "bg-success" : "bg-secondary")">
+                                    <i class="bi bi-@(assignment.Status >= DriverJobAction.Accepted ? "check" : "circle")"></i> Accepted
+                                </span>
+                                <span class="badge @(assignment.Status >= DriverJobAction.Completed ? "bg-success" : "bg-secondary")">
+                                    <i class="bi bi-@(assignment.Status >= DriverJobAction.Completed ? "check" : "circle")"></i> Done
+                                </span>
+                            </div>
+                            @if (assignment.Status == DriverJobAction.Completed && order.DeliveryActualAt.HasValue)
+                            {
+                                <div class="small text-muted mt-1">Delivered at @order.DeliveryActualAt.Value.ToString("g")</div>
+                            }
+                            @if (assignment.Status == DriverJobAction.Rejected)
+                            {
+                                <div class="small text-danger mt-1"><i class="bi bi-x-circle"></i> Rejected - reassign needed</div>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(assignment.DeliveryPhotoUrl))
+                            {
+                                <a href="@assignment.DeliveryPhotoUrl" target="_blank" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-image"></i> View
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">No proof</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.DeliveryAssignments.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">No delivery assignments found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+                <tbody>

@@ -1,0 +1,149 @@
+@page
+@model eDhaq.Web.Pages.Staff.Orders.PlacedModel
+@using eDhaq.Models.Enums
+@using eDhaq.Models.Entities
+@{
+    ViewData["Title"] = "Placed Orders";
+
+    string StageBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.OrderPlaced => "text-bg-warning",
+        OrderStatus.PickupScheduled => "text-bg-info",
+        OrderStatus.DriverAssigned => "text-bg-primary",
+        OrderStatus.DriverOnTheWay => "text-bg-primary",
+        OrderStatus.ClothesPickedUp => "text-bg-success",
+        _ => "text-bg-light"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Placed Orders</h2>
+        <p class="text-muted mb-0">New customer orders awaiting pickup scheduling and intake.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" asp-page="/Staff/Orders/Pickup">Pickup List</a>
+        <a class="btn btn-outline-dark" asp-page="/Staff/Orders/Delivery">Delivery List</a>
+        <a class="btn btn-edhaq" asp-page="/Staff/Orders/Process">Intake & Processing</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Order Placed</span>
+            <h4>@Model.PlacedCount</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Pickup Scheduled</span>
+            <h4>@Model.ScheduledCount</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Driver Assigned</span>
+            <h4>@Model.DriverAssignedCount</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card">
+            <span>Clothes Picked Up</span>
+            <h4>@Model.PickedUpCount</h4>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-6">
+                <input asp-for="Search" class="form-control" placeholder="Search order/customer/email" />
+            </div>
+            <div class="col-md-3">
+                <select asp-for="StatusFilter" class="form-select" asp-items="Html.GetEnumSelectList<OrderStatus>()">
+                    <option value="">All Stages</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button class="btn btn-outline-dark" type="submit">Filter</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Placed At</th>
+                    <th>Pickup Scheduled</th>
+                    <th>Pickup Driver</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var order in Model.Orders)
+                {
+                    var pickup = order.DriverAssignments
+                        .Where(x => x.IsPickup)
+                        .OrderByDescending(x => x.AssignedAt)
+                        .FirstOrDefault();
+
+                    <tr>
+                        <td>
+                            <a asp-page="/Staff/Orders/Process" asp-route-StatusFilter="@order.Status">@order.OrderNumber</a>
+                        </td>
+                        <td>@order.Customer.User.FirstName @order.Customer.User.LastName</td>
+                        <td>@order.CreatedAt.ToString("g")</td>
+                        <td>
+                            @if (order.PickupScheduledAt.Year > 2000)
+                            {
+                                <span>@order.PickupScheduledAt.ToString("g")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not scheduled</span>
+                            }
+                        </td>
+                        <td>
+                            @if (pickup?.Driver?.User is not null)
+                            {
+                                <span>@pickup.Driver.User.FirstName @pickup.Driver.User.LastName</span>
+                                <span class="badge @BadgeForDriverStatus(pickup.Status)">@pickup.Status</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Not assigned</span>
+                            }
+                        </td>
+                        <td><span class="badge @StageBadge(order.Status)">@order.Status</span></td>
+                        <td>
+                            <span class="badge text-bg-light">@order.Items.Count items</span>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Orders.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No placed orders found.</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string BadgeForDriverStatus(DriverJobAction s) => s switch
+    {
+        DriverJobAction.Pending => "text-bg-warning",
+        DriverJobAction.Accepted => "text-bg-info",
+        DriverJobAction.Completed => "text-bg-success",
+        DriverJobAction.Rejected => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
+}
