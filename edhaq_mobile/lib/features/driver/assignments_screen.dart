@@ -525,10 +525,13 @@ class _AssignmentCard extends StatelessWidget {
                     color: AppTheme.primaryColor,
                   ),
                 ),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
                     if (assignment.canAccept)
                       ElevatedButton.icon(
                         onPressed: onAccept,
@@ -570,6 +573,8 @@ class _AssignmentCard extends StatelessWidget {
                       ),
                   ],
                 ),
+              ),
+            ),
               ],
             ),
           ],
