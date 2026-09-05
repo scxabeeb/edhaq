@@ -95,6 +95,9 @@ public class IndexModel : PageModel
             .Include(x => x.Order)
             .ThenInclude(x => x.Customer)
             .ThenInclude(x => x.User)
+            .Include(x => x.Order)
+            .ThenInclude(x => x.Items)
+            .ThenInclude(i => i.Service)
             .Include(x => x.Driver)
             .ThenInclude(x => x.User)
             .AsQueryable();
