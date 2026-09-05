@@ -1,6 +1,8 @@
 @page
 @model eDhaq.Web.Pages.Staff.Orders.ProcessModel
 @using eDhaq.Models.Enums
+@using eDhaq.Models.Entities
+@using Microsoft.AspNetCore.Html
 @{
     ViewData["Title"] = "Staff - Order Processing";
 
@@ -13,6 +15,77 @@
         OrderStatus.OutForDelivery or OrderStatus.Delivered or OrderStatus.Completed => "text-bg-info",
         _ => "text-bg-light"
     };
+}
+
+@functions {
+    private static string BadgeForDriverStatus(DriverJobAction s) => s switch
+    {
+        DriverJobAction.Pending => "text-bg-warning",
+        DriverJobAction.Accepted => "text-bg-info",
+        DriverJobAction.Completed => "text-bg-success",
+        DriverJobAction.Rejected => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
+
+    IHtmlContent WriteDriverTask(DriverAssignment? a, string label, Order order)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<div class=\"d-flex justify-content-between align-items-center mb-1\">");
+        sb.Append($"<span class=\"fw-semibold small\">{label}</span>");
+        if (a is not null)
+        {
+            sb.Append($"<span class=\"badge {BadgeForDriverStatus(a.Status)}\">{a.Status}</span>");
+        }
+        sb.Append("</div>");
+
+        if (a is null)
+        {
+            sb.Append("<div class=\"text-muted small\">Not assigned yet.</div>");
+            return new HtmlString(sb.ToString());
+        }
+
+        var driverName = a.Driver?.User is not null
+            ? System.Net.WebUtility.HtmlEncode($"{a.Driver.User.FirstName} {a.Driver.User.LastName}")
+            : "Driver";
+        sb.Append($"<div class=\"small\">{driverName}</div>");
+        sb.Append("<ul class=\"list-unstyled mb-0 mt-1 small\">");
+
+        sb.Append($"<li class=\"{(a.Status >= DriverJobAction.Pending ? "text-success" : "text-muted")}\">");
+        sb.Append($"<i class=\"bi bi-{(a.Status >= DriverJobAction.Pending ? "check-circle" : "circle")} me-1\"></i>Assigned &middot; {a.AssignedAt:g}</li>");
+
+        sb.Append($"<li class=\"{(a.Status >= DriverJobAction.Accepted ? "text-success" : "text-muted")}\">");
+        sb.Append($"<i class=\"bi bi-{(a.Status >= DriverJobAction.Accepted ? "check-circle" : "circle")} me-1\"></i>Accepted");
+        if (a.AcceptedAt.HasValue) sb.Append($" &middot; {a.AcceptedAt.Value:g}");
+        sb.Append("</li>");
+
+        sb.Append($"<li class=\"{(a.Status >= DriverJobAction.Completed ? "text-success" : "text-muted")}\">");
+        sb.Append($"<i class=\"bi bi-{(a.Status >= DriverJobAction.Completed ? "check-circle" : "circle")} me-1\"></i>Completed");
+        if (a.CompletedAt.HasValue) sb.Append($" &middot; {a.CompletedAt.Value:g}");
+        sb.Append("</li>");
+
+        if (a.Status == DriverJobAction.Rejected)
+        {
+            sb.Append("<li class=\"text-danger\"><i class=\"bi bi-x-circle me-1\"></i>Rejected</li>");
+        }
+
+        sb.Append("</ul>");
+
+        if (label == "Pickup" && order.PickupActualAt.HasValue)
+        {
+            sb.Append($"<div class=\"small text-muted mt-1\">Picked up at {order.PickupActualAt.Value:g}</div>");
+        }
+        if (label == "Delivery" && order.DeliveryActualAt.HasValue)
+        {
+            sb.Append($"<div class=\"small text-muted mt-1\">Delivered at {order.DeliveryActualAt.Value:g}</div>");
+        }
+        if (label == "Delivery" && !string.IsNullOrWhiteSpace(a.DeliveryPhotoUrl))
+        {
+            sb.Append($"<a class=\"small mt-1 d-inline-block\" href=\"{a.DeliveryPhotoUrl}\" target=\"_blank\"><i class=\"bi bi-image me-1\"></i>View delivery proof</a>");
+        }
+
+        return new HtmlString(sb.ToString());
+    }
+}
 }
 
 <h2 class="page-title mb-3">Customer Orders Intake & Processing</h2>
@@ -70,6 +143,18 @@
                 @foreach (var order in Model.Orders)
                 {
                     <tr>
+                        <td>
+                            <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#orderDetail-@order.Id" aria-expanded="false" title="Show order items & driver tasks">
+                                <i class="bi bi-list-check"></i>
+                            </button>
+                            <div class="mt-1">
+                                <input type="checkbox"
+                                       name="SelectedOrderIds"
+                                       value="@order.Id"
+                                       form="bulkAdvanceForm"
+                                       class="order-select" />
+                            </div>
+                        </td>
                         <td>
                             <input type="checkbox"
                                    name="SelectedOrderIds"
@@ -208,6 +293,47 @@
                             {
                                 <span class="text-muted small">No next stage</span>
                             }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="p-0 border-0">
+                            <div class="collapse" id="orderDetail-@order.Id">
+                                <div class="p-3 bg-light border rounded-3">
+                                    <h6 class="fw-semibold mb-2">Order @order.OrderNumber &mdash; Items <span class="text-muted fw-normal">(@order.Items.Count)</span></h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered align-middle mb-3">
+                                            <thead class="table-light">
+                                                <tr><th>Service</th><th class="text-center" style="width:70px;">Qty</th><th class="text-end" style="width:90px;">Unit</th><th class="text-end" style="width:90px;">Total</th><th>Notes</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in order.Items)
+                                                {
+                                                    <tr>
+                                                        <td>@item.Service?.Name</td>
+                                                        <td class="text-center">@item.Quantity</td>
+                                                        <td class="text-end">@item.UnitPrice.ToString("N2")</td>
+                                                        <td class="text-end">@item.TotalPrice.ToString("N2")</td>
+                                                        <td class="text-muted">@item.Notes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <h6 class="fw-semibold mb-2">Driver Tasks</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-6"><div class="border rounded p-2 h-100">@WriteDriverTask(Model.GetPickupAssignment(order), "Pickup", order)</div></div>
+                                        <div class="col-md-6"><div class="border rounded p-2 h-100">@WriteDriverTask(Model.GetDeliveryAssignment(order), "Delivery", order)</div></div>
+                                    </div>
+                                    <div class="mt-2 d-flex justify-content-between small text-muted">
+                                        <span>Subtotal: @order.SubTotal.ToString("N2") &middot; Delivery: @order.DeliveryFee.ToString("N2") &middot; Discount: @order.Discount.ToString("N2")</span>
+                                        <span class="fw-semibold text-dark">Total: @order.TotalAmount.ToString("N2")</span>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(order.SpecialInstructions))
+                                    {
+                                        <div class="mt-1 small"><span class="fw-semibold">Instructions:</span> @order.SpecialInstructions</div>
+                                    }
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 }

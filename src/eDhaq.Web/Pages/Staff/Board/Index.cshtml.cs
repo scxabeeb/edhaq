@@ -49,6 +49,11 @@ public class IndexModel : PageModel
             .Where(x => statuses.Contains(x.Status))
             .Include(x => x.Customer)
             .ThenInclude(x => x.User)
+            .Include(x => x.Items)
+            .ThenInclude(x => x.Service)
+            .Include(x => x.DriverAssignments)
+            .ThenInclude(x => x.Driver)
+            .ThenInclude(x => x.User)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
 

@@ -45,8 +45,24 @@
                     @foreach (var order in col.Value)
                     {
                         <div class="board-card">
-                            <div class="fw-semibold">@order.OrderNumber</div>
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="fw-semibold">@order.OrderNumber</div>
+                                <button class="btn btn-sm btn-link p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#boardItems-@order.Id" aria-expanded="false" title="Show items">
+                                    <i class="bi bi-list-ul"></i> @order.Items.Count
+                                </button>
+                            </div>
                             <small class="text-muted">@order.Customer.User.FirstName @order.Customer.User.LastName</small>
+                            <div class="collapse mt-1" id="boardItems-@order.Id">
+                                <ul class="list-unstyled mb-0 small">
+                                    @foreach (var item in order.Items)
+                                    {
+                                        <li class="d-flex justify-content-between gap-2">
+                                            <span class="text-truncate">@item.Service?.Name</span>
+                                            <span class="text-muted flex-shrink-0">x@item.Quantity</span>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
                             <div class="d-flex justify-content-between align-items-center mt-2">
                                 @if (col.Key == OrderStatus.ReadyForDelivery)
                                 {
