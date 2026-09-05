@@ -229,6 +229,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(AppRoutes.notifications),
               ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.lock_outline),
+                title: const Text('Change Password'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(AppRoutes.changePassword),
+              ),
             ],
           ),
         ),

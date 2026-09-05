@@ -215,6 +215,46 @@ public class AuthController : ApiControllerBase
         return Ok(new { message = "Logged out." });
     }
 
+    [HttpPost("change-password")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new ProblemDetails { Title = "Current password and new password are required." });
+        }
+
+        if (request.NewPassword.Length < 8)
+        {
+            return BadRequest(new ProblemDetails { Title = "New password must be at least 8 characters." });
+        }
+
+        if (request.NewPassword != request.ConfirmPassword)
+        {
+            return BadRequest(new ProblemDetails { Title = "New password and confirmation do not match." });
+        }
+
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(new ProblemDetails { Title = "Authentication required." });
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return NotFound(new ProblemDetails { Title = "User not found." });
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new ProblemDetails { Title = string.Join(" ", result.Errors.Select(e => e.Description)) });
+        }
+
+        return Ok(new { message = "Password changed successfully." });
+    }
+
     [HttpGet("cities")]
     [AllowAnonymous]
     public async Task<ActionResult<List<CityDto>>> GetCities()

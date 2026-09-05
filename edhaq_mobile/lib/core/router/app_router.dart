@@ -16,6 +16,7 @@ import '../../features/customer/notifications_screen.dart';
 import '../../features/customer/order_detail_screen.dart';
 import '../../features/customer/orders_screen.dart';
 import '../../features/customer/profile_screen.dart';
+import '../../features/customer/change_password_screen.dart';
 import '../../features/driver/assignments_screen.dart';
 import '../../features/driver/home_screen.dart';
 import '../../features/admin/home_screen.dart';
@@ -38,6 +39,7 @@ abstract class AppRoutes {
   static const String addAddress = '/addresses/add';
   static const String notifications = '/notifications';
   static const String profile = '/profile';
+  static const String changePassword = '/change-password';
   static const String driverHome = '/driver';
   static const String driverAssignments = '/driver/assignments';
   static const String adminHome = '/admin';
@@ -215,6 +217,11 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.profile,
       name: 'profile',
       builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.changePassword,
+      name: 'changePassword',
+      builder: (context, state) => const ChangePasswordScreen(),
     ),
     GoRoute(
       path: AppRoutes.driverHome,

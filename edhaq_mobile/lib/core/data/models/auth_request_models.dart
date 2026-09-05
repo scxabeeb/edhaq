@@ -17,6 +17,25 @@ class LoginRequest {
       };
 }
 
+/// Request payload for the `/api/auth/change-password` endpoint.
+class ChangePasswordRequest {
+  final String currentPassword;
+  final String newPassword;
+  final String confirmPassword;
+
+  ChangePasswordRequest({
+    required this.currentPassword,
+    required this.newPassword,
+    required this.confirmPassword,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      };
+}
+
 /// Request payload for the `/api/auth/register` endpoint.
 class RegisterRequest {
   final String firstName;

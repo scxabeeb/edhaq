@@ -24,6 +24,13 @@ public class RegisterRequest
     public string? District { get; set; }
 }
 
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
 public class UserInfoDto
 {
     public string Id { get; set; } = string.Empty;

@@ -441,7 +441,7 @@ public class IndexModel : PageModel
         return RedirectToPage();
     }
 
-    // ── RESET PASSWORD ───────────────────────────────────────────────────
+    // ── RESET PASSWORD (admin resets another user's password) ────────────
     public async Task<IActionResult> OnPostResetPasswordAsync(string userId, string newPassword)
     {
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
@@ -466,6 +466,61 @@ public class IndexModel : PageModel
         }
 
         TempData["SuccessMessage"] = $"Password reset for {user.Email}.";
+        return RedirectToPage();
+    }
+
+    // ── CHANGE PASSWORD (user changes own password with current password) ─
+    [BindProperty]
+    public string? ChangePwdCurrent { get; set; }
+
+    [BindProperty]
+    public string? ChangePwdNew { get; set; }
+
+    [BindProperty]
+    public string? ChangePwdConfirm { get; set; }
+
+    public async Task<IActionResult> OnPostChangePasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ChangePwdCurrent) || string.IsNullOrWhiteSpace(ChangePwdNew) || string.IsNullOrWhiteSpace(ChangePwdConfirm))
+        {
+            TempData["ErrorMessage"] = "All fields are required.";
+            return RedirectToPage();
+        }
+
+        if (ChangePwdNew.Length < 8)
+        {
+            TempData["ErrorMessage"] = "New password must be at least 8 characters.";
+            return RedirectToPage();
+        }
+
+        if (ChangePwdNew != ChangePwdConfirm)
+        {
+            TempData["ErrorMessage"] = "New password and confirmation do not match.";
+            return RedirectToPage();
+        }
+
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            TempData["ErrorMessage"] = "Authentication required.";
+            return RedirectToPage();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            TempData["ErrorMessage"] = "User not found.";
+            return RedirectToPage();
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, ChangePwdCurrent, ChangePwdNew);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = string.Join(" ", result.Errors.Select(e => e.Description));
+            return RedirectToPage();
+        }
+
+        TempData["SuccessMessage"] = "Your password has been changed successfully.";
         return RedirectToPage();
     }
 

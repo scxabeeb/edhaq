@@ -44,6 +44,10 @@ class ApiService {
     await _post('${AppConstants.authPath}/logout');
   }
 
+  Future<void> changePassword(ChangePasswordRequest request) async {
+    await _post('${AppConstants.authPath}/change-password', data: request.toJson());
+  }
+
   // ════════════════════════════════════════════════════════════════════════
   //  Location endpoints  —  /api/locations
   // ════════════════════════════════════════════════════════════════════════

@@ -5,6 +5,7 @@ import '../data/models/user_model.dart';
 import '../data/repositories/auth_repository.dart';
 import 'usecase.dart';
 
+
 /// Logs a user in with email + password.
 class LoginUseCase implements Usecase<LoginResponse, LoginRequest> {
   final AuthRepository repository;
@@ -46,4 +47,15 @@ class LogoutUseCase implements Usecase<void, NoParams> {
 
   @override
   Future<Either<Failure, void>> call(NoParams params) => repository.logout();
+}
+
+/// Changes the current user's password.
+class ChangePasswordUseCase implements Usecase<void, ChangePasswordRequest> {
+  final AuthRepository repository;
+
+  ChangePasswordUseCase(this.repository);
+
+  @override
+  Future<Either<Failure, void>> call(ChangePasswordRequest params) =>
+      repository.changePassword(params);
 }

@@ -72,6 +72,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<LogoutUseCase>(
     () => LogoutUseCase(sl<AuthRepository>()),
   );
+  sl.registerLazySingleton<ChangePasswordUseCase>(
+    () => ChangePasswordUseCase(sl<AuthRepository>()),
+  );
 
   // Locations
   sl.registerLazySingleton<GetCitiesUseCase>(

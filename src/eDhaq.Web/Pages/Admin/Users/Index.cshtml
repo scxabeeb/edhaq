@@ -26,9 +26,14 @@
         <h2 class="page-title mb-1">User Management</h2>
         <p class="text-muted mb-0" style="font-size:.9rem">@Model.TotalCount user(s) registered</p>
     </div>
-    <button class="btn btn-edhaq d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createUserModal">
-        <i class="bi bi-person-plus-fill"></i> Create User
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+            <i class="bi bi-key me-1"></i> Change My Password
+        </button>
+        <button class="btn btn-edhaq d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <i class="bi bi-person-plus-fill"></i> Create User
+        </button>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm mb-3">
@@ -138,6 +143,15 @@
                                     data-roles="@string.Join(",", user.CurrentRoles)">
                                 <i class="bi bi-person-gear"></i>
                             </button>
+                            <!-- Reset Password -->
+                            <button class="btn btn-sm btn-outline-warning"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#resetPasswordModal"
+                                    data-userid="@user.UserId"
+                                    data-email="@user.Email"
+                                    title="Reset Password">
+                                <i class="bi bi-key"></i>
+                            </button>
                             <!-- Toggle Active -->
                             <form method="post" asp-page-handler="ToggleActive">
                                 <input type="hidden" name="UserId" value="@user.UserId" />
@@ -184,6 +198,72 @@
         </ul>
     </nav>
 }
+
+<!-- ════════════════════════════════════════════
+     CHANGE PASSWORD MODAL (own account)
+═════════════════════════════════════════════ -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="ChangePassword">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="changePasswordModalLabel">
+                        <i class="bi bi-key text-warning me-2"></i>Change My Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Current Password <span class="text-danger">*</span></label>
+                        <input name="ChangePwdCurrent" type="password" class="form-control" placeholder="Enter current password" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
+                        <input name="ChangePwdNew" type="password" class="form-control" placeholder="Min. 8 characters" required minlength="8" maxlength="100" />
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Confirm New Password <span class="text-danger">*</span></label>
+                        <input name="ChangePwdConfirm" type="password" class="form-control" placeholder="Re-enter new password" required minlength="8" maxlength="100" />
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-edhaq"><i class="bi bi-check2 me-1"></i> Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     RESET PASSWORD MODAL (another user)
+═════════════════════════════════════════════ -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" asp-page-handler="ResetPassword">
+                <input type="hidden" name="UserId" id="resetPwdUserId" />
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="resetPasswordModalLabel">
+                        <i class="bi bi-key-fill text-danger me-2"></i>Reset User Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Resetting password for <strong id="resetPwdUserEmail"></strong></p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
+                        <input name="NewPassword" type="password" class="form-control" placeholder="Min. 8 characters" required minlength="8" maxlength="100" />
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-edhaq"><i class="bi bi-check2 me-1"></i> Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- ════════════════════════════════════════════
      CREATE USER MODAL
@@ -499,6 +579,13 @@
         document.getElementById('driverFields').style.display = driverRoles.includes(role) ? '' : 'none';
         document.getElementById('staffFields').style.display  = staffRoles.includes(role)  ? '' : 'none';
     }
+
+    // Reset password modal (per-row)
+    document.getElementById('resetPasswordModal').addEventListener('show.bs.modal', function(e) {
+        var btn = e.relatedTarget;
+        document.getElementById('resetPwdUserId').value = btn.dataset.userid;
+        document.getElementById('resetPwdUserEmail').textContent = btn.dataset.email;
+    });
 </script>
 }
 
