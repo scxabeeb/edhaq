@@ -2,6 +2,8 @@
 @model eDhaq.Web.Pages.Cashier.Payments.IndexModel
 @{
     ViewData["Title"] = "Cashier Payments";
+
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <h2 class="page-title mb-3">Cashier Payment Queue</h2>
@@ -16,7 +18,7 @@
                 <tr>
                     <td>@p.Order.OrderNumber</td>
                     <td>@p.Order.Customer.User.FirstName @p.Order.Customer.User.LastName</td>
-                    <td>@p.Amount.ToString("C")</td>
+                    <td>@FormatMoney(p.Amount)</td>
                     <td>@p.Method</td>
                     <td>@p.Status</td>
                     <td>

@@ -3,6 +3,8 @@
 @using eDhaq.Models.Enums
 @{
     ViewData["Title"] = "Finance Portal";
+
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,15 +34,15 @@
 
 <!-- Summary Metrics -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="metric-card"><span>Total Revenue</span><h4>@Model.TotalRevenue.ToString("C")</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Today's Revenue</span><h4>@Model.TodaysRevenue.ToString("C")</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Pending Payments</span><h4 class="text-warning">@Model.PendingPaymentsTotal.ToString("C")</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Total Wallet Balance</span><h4 class="text-info">@Model.TotalWalletBalance.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Total Revenue</span><h4>@FormatMoney(Model.TotalRevenue)</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Today's Revenue</span><h4>@FormatMoney(Model.TodaysRevenue)</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Pending Payments</span><h4 class="text-warning">@FormatMoney(Model.PendingPaymentsTotal)</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Total Wallet Balance</span><h4 class="text-info">@FormatMoney(Model.TotalWalletBalance)</h4></div></div>
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="metric-card"><span>Paid Total</span><h4 class="text-success">@Model.PaidTotal.ToString("C")</h4></div></div>
-    <div class="col-md-3"><div class="metric-card"><span>Refunded Total</span><h4 class="text-danger">@Model.RefundedTotal.ToString("C")</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Paid Total</span><h4 class="text-success">@FormatMoney(Model.PaidTotal)</h4></div></div>
+    <div class="col-md-3"><div class="metric-card"><span>Refunded Total</span><h4 class="text-danger">@FormatMoney(Model.RefundedTotal)</h4></div></div>
     <div class="col-md-3"><div class="metric-card"><span>Paid Transactions</span><h4 class="text-success">@Model.PaidOrdersCount</h4></div></div>
     <div class="col-md-3"><div class="metric-card"><span>Pending Transactions</span><h4 class="text-warning">@Model.PendingOrdersCount</h4></div></div>
 </div>
@@ -61,7 +63,7 @@
                         {
                             <tr>
                                 <td>@kvp.Key</td>
-                                <td class="text-end fw-semibold">@kvp.Value.ToString("C")</td>
+                                <td class="text-end fw-semibold">@FormatMoney(kvp.Value)</td>
                             </tr>
                         }
                     </tbody>
@@ -145,7 +147,7 @@
                                 }
                                 <span class="badge text-bg-@badgeColor">@payment.Status</span>
                             </td>
-                            <td class="text-end fw-semibold">@payment.Amount.ToString("C")</td>
+                            <td class="text-end fw-semibold">@FormatMoney(payment.Amount)</td>
                             <td class="text-muted small">@payment.CreatedAt.ToString("dd MMM yyyy")</td>
                             <td class="text-end">
                                 @if (payment.Status == PaymentStatus.Pending)

@@ -2,6 +2,8 @@
 @model eDhaq.Web.Pages.Admin.Orders.IndexModel
 @{
     ViewData["Title"] = "Admin - Orders";
+
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -201,7 +203,7 @@
                                 }
                             </div>
                         </td>
-                        <td>@order.TotalAmount.ToString("C")</td>
+                        <td>@FormatMoney(order.TotalAmount)</td>
                         <td>
                             <form method="post" asp-page-handler="UpdateStatus" class="d-flex gap-2">
                                 <input type="hidden" name="OrderId" value="@order.Id" />

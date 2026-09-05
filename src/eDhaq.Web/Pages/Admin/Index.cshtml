@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = "Admin Dashboard";
     var d = Model.Dashboard;
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
     string StatusColor(OrderStatus s) => s switch
     {
         OrderStatus.OrderPlaced => "#F59E0B",
@@ -43,7 +44,7 @@
             <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
             <div class="stat-body">
                 <span class="stat-label">Today's Revenue</span>
-                <h4 class="stat-value">@d.TodaysRevenue.ToString("C")</h4>
+                <h4 class="stat-value">@FormatMoney(d.TodaysRevenue)</h4>
             </div>
         </div>
     </div>

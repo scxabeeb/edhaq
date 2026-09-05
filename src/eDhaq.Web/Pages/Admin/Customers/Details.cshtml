@@ -11,6 +11,7 @@
         OrderStatus.OrderPlaced => "warning",
         _ => "primary"
     };
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
@@ -28,8 +29,8 @@
     <div class="col-6 col-md-2"><div class="stat-card stat-success"><div class="stat-body"><span class="stat-label">Completed</span><h4 class="stat-value">@Model.CompletedOrders</h4></div></div></div>
     <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Pending</span><h4 class="stat-value">@Model.PendingOrders</h4></div></div></div>
     <div class="col-6 col-md-2"><div class="stat-card stat-danger"><div class="stat-body"><span class="stat-label">Cancelled</span><h4 class="stat-value">@Model.CancelledOrders</h4></div></div></div>
-    <div class="col-6 col-md-2"><div class="stat-card stat-blue"><div class="stat-body"><span class="stat-label">Total Spent</span><h4 class="stat-value">@Model.TotalSpent.ToString("C")</h4></div></div></div>
-    <div class="col-6 col-md-2"><div class="stat-card stat-info"><div class="stat-body"><span class="stat-label">Avg Order</span><h4 class="stat-value">@Model.AvgOrderValue.ToString("C")</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-blue"><div class="stat-body"><span class="stat-label">Total Spent</span><h4 class="stat-value">@FormatMoney(Model.TotalSpent)</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-info"><div class="stat-body"><span class="stat-label">Avg Order</span><h4 class="stat-value">@FormatMoney(Model.AvgOrderValue)</h4></div></div></div>
 </div>
 
 <div class="row g-3">
@@ -48,7 +49,7 @@
                             <td class="fw-semibold">@o.OrderNumber</td>
                             <td class="text-muted small">@o.CreatedAt.ToString("MMM d, yyyy")</td>
                             <td><span class="badge text-bg-light border">@o.Items.Count</span></td>
-                            <td class="fw-semibold">@o.TotalAmount.ToString("C")</td>
+                            <td class="fw-semibold">@FormatMoney(o.TotalAmount)</td>
                             <td class="text-muted small">@o.PaymentMethod · @o.PaymentStatus</td>
                             <td><span class="badge text-bg-@StatusBadge(o.Status)">@o.Status</span></td>
                         </tr>
@@ -66,7 +67,7 @@
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-white border-0 pt-3"><span class="fw-semibold">Profile</span></div>
             <div class="card-body pt-2">
-                <div class="mb-2"><span class="text-muted small">Wallet Balance</span><div class="fw-semibold">@c.WalletBalance.ToString("C")</div></div>
+                <div class="mb-2"><span class="text-muted small">Wallet Balance</span><div class="fw-semibold">@FormatMoney(c.WalletBalance)</div></div>
                 <div class="mb-2"><span class="text-muted small">Referral Code</span><div class="fw-semibold">@(c.ReferralCode ?? "—")</div></div>
                 <div class="mb-2"><span class="text-muted small">Member Since</span><div class="fw-semibold">@c.CreatedAt.ToString("MMM d, yyyy")</div></div>
             </div>

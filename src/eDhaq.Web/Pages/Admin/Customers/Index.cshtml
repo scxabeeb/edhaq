@@ -2,6 +2,8 @@
 @model eDhaq.Web.Pages.Admin.Customers.IndexModel
 @{
     ViewData["Title"] = "Customers";
+
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
@@ -37,7 +39,7 @@
     <div class="col-6 col-md-3">
         <div class="stat-card stat-success">
             <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
-            <div class="stat-body"><span class="stat-label">Total Revenue</span><h4 class="stat-value">@Model.TotalRevenue.ToString("C")</h4></div>
+            <div class="stat-body"><span class="stat-label">Total Revenue</span><h4 class="stat-value">@FormatMoney(Model.TotalRevenue)</h4></div>
         </div>
     </div>
 </div>
@@ -94,7 +96,7 @@
                             <span class="badge text-bg-danger">@c.CancelledOrders cancelled</span>
                         }
                     </td>
-                    <td class="fw-semibold">@c.TotalSpent.ToString("C")</td>
+                    <td class="fw-semibold">@FormatMoney(c.TotalSpent)</td>
                     <td class="text-muted small">@(c.LastOrderAt?.ToString("MMM d, yyyy") ?? "—")</td>
                     <td>
                         @if (c.IsActive)

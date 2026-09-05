@@ -11,6 +11,7 @@
         DriverJobAction.Rejected => "danger",
         _ => "warning"
     };
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
@@ -29,7 +30,7 @@
     <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Pending</span><h4 class="stat-value">@Model.PendingCount</h4></div></div></div>
     <div class="col-6 col-md-2"><div class="stat-card stat-blue"><div class="stat-body"><span class="stat-label">Accepted</span><h4 class="stat-value">@Model.AcceptedCount</h4></div></div></div>
     <div class="col-6 col-md-2"><div class="stat-card stat-info"><div class="stat-body"><span class="stat-label">Completion</span><h4 class="stat-value">@Model.CompletionRate.ToString("0")%</h4></div></div></div>
-    <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Earnings</span><h4 class="stat-value">@d.TotalEarnings.ToString("C")</h4></div></div></div>
+    <div class="col-6 col-md-2"><div class="stat-card stat-warning"><div class="stat-body"><span class="stat-label">Earnings</span><h4 class="stat-value">@FormatMoney(d.TotalEarnings)</h4></div></div></div>
 </div>
 
 <div class="row g-3">

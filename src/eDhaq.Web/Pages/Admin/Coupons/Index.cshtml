@@ -2,6 +2,8 @@
 @model eDhaq.Web.Pages.Admin.Coupons.IndexModel
 @{
     ViewData["Title"] = "Coupon Management";
+
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <h2 class="page-title mb-3">Coupons</h2>
@@ -29,7 +31,7 @@
             {
                 <tr>
                     <td>@c.Code</td>
-                    <td>@(c.IsPercentage ? $"{c.Value}%" : c.Value.ToString("C"))</td>
+                    <td>@(c.IsPercentage ? $"{c.Value}%" : FormatMoney(c.Value))</td>
                     <td>@c.ValidTo.ToString("dd MMM yyyy")</td>
                     <td>@c.UsageCount</td>
                     <td>@(c.IsActive ? "Active" : "Disabled")</td>

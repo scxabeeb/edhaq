@@ -2,10 +2,12 @@
 @model eDhaq.Web.Pages.Driver.Earnings.IndexModel
 @{
     ViewData["Title"] = "Driver Earnings";
+
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="row g-3 mb-3">
-    <div class="col-md-6"><div class="metric-card"><span>Total Earnings</span><h4>@Model.TotalEarnings.ToString("C")</h4></div></div>
+    <div class="col-md-6"><div class="metric-card"><span>Total Earnings</span><h4>@FormatMoney(Model.TotalEarnings)</h4></div></div>
     <div class="col-md-6"><div class="metric-card"><span>Completed Assignments</span><h4>@Model.CompletedAssignments</h4></div></div>
 </div>
 
@@ -19,7 +21,7 @@
                 <tr>
                     <td>@item.OrderNumber</td>
                     <td>@item.Date.ToString("dd MMM yyyy HH:mm")</td>
-                    <td>@item.Amount.ToString("C")</td>
+                    <td>@FormatMoney(item.Amount)</td>
                 </tr>
             }
             </tbody>

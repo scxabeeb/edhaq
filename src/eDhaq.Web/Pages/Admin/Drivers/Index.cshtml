@@ -9,6 +9,7 @@
         DriverStatus.OnDuty => "primary",
         _ => "secondary"
     };
+    string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
@@ -33,7 +34,7 @@
         <div class="stat-card stat-blue"><div class="stat-icon"><i class="bi bi-box-seam"></i></div><div class="stat-body"><span class="stat-label">Completed Deliveries</span><h4 class="stat-value">@Model.TotalDeliveries</h4></div></div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="stat-card stat-warning"><div class="stat-icon"><i class="bi bi-cash-stack"></i></div><div class="stat-body"><span class="stat-label">Total Earnings</span><h4 class="stat-value">@Model.TotalEarnings.ToString("C")</h4></div></div>
+        <div class="stat-card stat-warning"><div class="stat-icon"><i class="bi bi-cash-stack"></i></div><div class="stat-body"><span class="stat-label">Total Earnings</span><h4 class="stat-value">@FormatMoney(Model.TotalEarnings)</h4></div></div>
     </div>
 </div>
 
@@ -102,7 +103,7 @@
                         <span class="text-warning">@for (var i = 0; i < (int)Math.Round(d.Rating); i++) { <i class="bi bi-star-fill"></i> }</span>
                         <span class="small text-muted">@d.Rating.ToString("0.0")</span>
                     </td>
-                    <td class="fw-semibold">@d.TotalEarnings.ToString("C")</td>
+                    <td class="fw-semibold">@FormatMoney(d.TotalEarnings)</td>
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
                             <a class="btn btn-sm btn-outline-primary" asp-page="./Details" asp-route-id="@d.DriverId" title="View details">

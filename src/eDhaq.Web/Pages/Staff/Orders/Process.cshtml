@@ -325,8 +325,8 @@
                                         <div class="col-md-6"><div class="border rounded p-2 h-100">@WriteDriverTask(Model.GetDeliveryAssignment(order), "Delivery", order)</div></div>
                                     </div>
                                     <div class="mt-2 d-flex justify-content-between small text-muted">
-                                        <span>Subtotal: @order.SubTotal.ToString("N2") &middot; Delivery: @order.DeliveryFee.ToString("N2") &middot; Discount: @order.Discount.ToString("N2")</span>
-                                        <span class="fw-semibold text-dark">Total: @order.TotalAmount.ToString("N2")</span>
+                                        <span>Subtotal: $@order.SubTotal.ToString("N2") &middot; Delivery: $@order.DeliveryFee.ToString("N2") &middot; Discount: $@order.Discount.ToString("N2")</span>
+                                        <span class="fw-semibold text-dark">Total: $@order.TotalAmount.ToString("N2")</span>
                                     </div>
                                     @if (!string.IsNullOrWhiteSpace(order.SpecialInstructions))
                                     {
