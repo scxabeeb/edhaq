@@ -35,9 +35,12 @@ public class IndexModel : PageModel
         var statuses = new[]
         {
             OrderStatus.LaundryReceived,
+            OrderStatus.Sorting,
             OrderStatus.Washing,
+            OrderStatus.DryCleaning,
             OrderStatus.Drying,
             OrderStatus.Ironing,
+            OrderStatus.Folding,
             OrderStatus.Packaging,
             OrderStatus.ReadyForDelivery
         };
@@ -75,12 +78,14 @@ public class IndexModel : PageModel
     {
         return status switch
         {
-            OrderStatus.LaundryReceived => OrderStatus.Washing,
+            OrderStatus.LaundryReceived => OrderStatus.Sorting,
+            OrderStatus.Sorting => OrderStatus.Washing,
             OrderStatus.Washing => OrderStatus.Drying,
             OrderStatus.Drying => OrderStatus.Ironing,
-            OrderStatus.Ironing => OrderStatus.Packaging,
-            OrderStatus.Packaging => OrderStatus.ReadyForDelivery,
-            OrderStatus.ReadyForDelivery => OrderStatus.DriverAssigned,
+            OrderStatus.Ironing => OrderStatus.Folding,
+            OrderStatus.Folding => OrderStatus.Packaging,
+            // ReadyForDelivery has no next stage on the board: a delivery
+            // driver must be assigned from the Intake & Processing screen.
             _ => null
         };
     }

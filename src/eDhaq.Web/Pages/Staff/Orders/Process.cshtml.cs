@@ -88,6 +88,39 @@ public class ProcessModel : PageModel
     public OrderStatus? GetNextStage(OrderStatus status)
         => LaundryStageFlow.TryGetValue(status, out var next) ? next : null;
 
+    /// <summary>Pickup driver may be (re)assigned while the clothes have not yet been received into the laundry.</summary>
+    public bool CanAssignPickup(OrderStatus status)
+        => status is OrderStatus.OrderPlaced
+            or OrderStatus.PickupScheduled
+            or OrderStatus.DriverAssigned
+            or OrderStatus.DriverOnTheWay
+            or OrderStatus.ClothesPickedUp;
+
+    /// <summary>Delivery driver may only be assigned once the order is ready for delivery (or already out for delivery).</summary>
+    public bool CanAssignDelivery(OrderStatus status)
+        => status is OrderStatus.ReadyForDelivery or OrderStatus.OutForDelivery;
+
+    /// <summary>Buckets a status into a human-facing workflow phase.</summary>
+    public string StagePhase(OrderStatus status)
+    {
+        if (CanAssignPickup(status))
+        {
+            return "Pickup";
+        }
+
+        if (ProcessingStages.Contains(status))
+        {
+            return "Processing";
+        }
+
+        return status switch
+        {
+            OrderStatus.ReadyForDelivery => "Ready",
+            OrderStatus.OutForDelivery or OrderStatus.Delivered or OrderStatus.Completed => "Delivery",
+            _ => "Other"
+        };
+    }
+
     public async Task OnGetAsync()
     {
         await LoadOptionsAsync();
@@ -213,6 +246,18 @@ public class ProcessModel : PageModel
         if (!driverExists)
         {
             TempData["ErrorMessage"] = "Driver was not found.";
+            return RedirectToPage(new { Search, StatusFilter, PageNumber });
+        }
+
+        if (isPickup && !CanAssignPickup(order.Status))
+        {
+            TempData["ErrorMessage"] = $"Pickup driver can only be assigned before the clothes are received (current stage: {order.Status}). Assign the pickup on the pickup leg of the workflow.";
+            return RedirectToPage(new { Search, StatusFilter, PageNumber });
+        }
+
+        if (!isPickup && !CanAssignDelivery(order.Status))
+        {
+            TempData["ErrorMessage"] = $"Delivery driver can only be assigned once the order is Ready for Delivery (current stage: {order.Status}). Finish processing first.";
             return RedirectToPage(new { Search, StatusFilter, PageNumber });
         }
 

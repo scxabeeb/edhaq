@@ -1,35 +1,104 @@
 @page
 @model eDhaq.Web.Pages.Staff.Board.IndexModel
+@using eDhaq.Models.Enums
 @{
     ViewData["Title"] = "Laundry Board";
+
+    string ColumnColor(OrderStatus s) => s switch
+    {
+        OrderStatus.LaundryReceived => "#64748B",
+        OrderStatus.Sorting => "#78716C",
+        OrderStatus.Washing => "#9333EA",
+        OrderStatus.DryCleaning => "#A855F7",
+        OrderStatus.Drying => "#C026D3",
+        OrderStatus.Ironing => "#DB2777",
+        OrderStatus.Folding => "#EC4899",
+        OrderStatus.Packaging => "#F472B6",
+        OrderStatus.ReadyForDelivery => "#14A44D",
+        _ => "#6B7280"
+    };
 }
 
-<h2 class="page-title mb-3">Laundry Workflow Board</h2>
-
-<div class="row g-3">
-@foreach (var col in Model.Board)
-{
-    <div class="col-lg-3 col-md-4 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white"><strong>@col.Key</strong> <span class="text-muted">(@col.Value.Count)</span></div>
-            <div class="card-body p-2">
-                @foreach (var order in col.Value)
-                {
-                    <div class="border rounded p-2 mb-2 bg-light-subtle">
-                        <div class="fw-semibold">@order.OrderNumber</div>
-                        <small>@order.Customer.User.FirstName @order.Customer.User.LastName</small>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="badge text-bg-light">@order.Status</span>
-                            <form method="post" asp-page-handler="MoveNext" class="d-inline">
-                                <input type="hidden" name="OrderId" value="@order.Id" />
-                                <input type="hidden" name="CurrentStatus" value="@order.Status" />
-                                <button class="btn btn-sm btn-edhaq" type="submit">Next</button>
-                            </form>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">Laundry Workflow Board</h2>
+        <p class="text-muted mb-0">Drag-free track of orders moving through the laundry pipeline. Use "Next" to advance each order.</p>
     </div>
-}
+    <a class="btn btn-outline-dark" asp-page="/Staff/Orders/Process">Open Intake & Processing</a>
 </div>
+
+<div class="board-scroll">
+    <div class="d-flex gap-3 align-items-start">
+        @foreach (var col in Model.Board)
+        {
+            var color = ColumnColor(col.Key);
+            <div class="board-col">
+                <div class="board-col-header" style="border-left: 5px solid @color;">
+                    <span class="fw-semibold">@col.Key</span>
+                    <span class="badge text-bg-light ms-auto">@col.Value.Count</span>
+                </div>
+                <div class="board-col-body">
+                    @if (col.Value.Count == 0)
+                    {
+                        <div class="text-muted small text-center py-3">No orders</div>
+                    }
+                    @foreach (var order in col.Value)
+                    {
+                        <div class="board-card">
+                            <div class="fw-semibold">@order.OrderNumber</div>
+                            <small class="text-muted">@order.Customer.User.FirstName @order.Customer.User.LastName</small>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                @if (col.Key == OrderStatus.ReadyForDelivery)
+                                {
+                                    <span class="small text-success">Ready - assign delivery</span>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="MoveNext" class="d-inline">
+                                        <input type="hidden" name="OrderId" value="@order.Id" />
+                                        <input type="hidden" name="CurrentStatus" value="@order.Status" />
+                                        <button class="btn btn-sm btn-edhaq" type="submit">
+                                            Next <i class="bi bi-arrow-right"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .board-scroll { overflow-x: auto; padding-bottom: .5rem; }
+    .board-col {
+        min-width: 250px;
+        max-width: 250px;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: .75rem;
+        overflow: hidden;
+    }
+    .board-col-header {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .6rem .75rem;
+        background: #fff;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .board-col-body {
+        padding: .5rem;
+        min-height: 120px;
+    }
+    .board-card {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: .5rem;
+        padding: .6rem .75rem;
+        margin-bottom: .5rem;
+        box-shadow: 0 1px 2px rgba(16,24,40,.05);
+    }
+</style>

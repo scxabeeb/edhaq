@@ -1,7 +1,18 @@
 @page
 @model eDhaq.Web.Pages.Staff.Orders.ProcessModel
+@using eDhaq.Models.Enums
 @{
     ViewData["Title"] = "Staff - Order Processing";
+
+    string StageBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.OrderPlaced or OrderStatus.PickupScheduled or OrderStatus.DriverAssigned or OrderStatus.DriverOnTheWay or OrderStatus.ClothesPickedUp => "text-bg-primary",
+        OrderStatus.LaundryReceived or OrderStatus.Sorting => "text-bg-secondary",
+        OrderStatus.Washing or OrderStatus.DryCleaning or OrderStatus.Drying or OrderStatus.Ironing or OrderStatus.Folding or OrderStatus.Packaging => "text-bg-dark",
+        OrderStatus.ReadyForDelivery => "text-bg-success",
+        OrderStatus.OutForDelivery or OrderStatus.Delivered or OrderStatus.Completed => "text-bg-info",
+        _ => "text-bg-light"
+    };
 }
 
 <h2 class="page-title mb-3">Customer Orders Intake & Processing</h2>
@@ -68,7 +79,12 @@
                         </td>
                         <td>@order.OrderNumber</td>
                         <td>@order.Customer.User.FirstName @order.Customer.User.LastName</td>
-                        <td><span class="badge text-bg-light">@order.Status</span></td>
+                        <td>
+                            <span class="badge @StageBadge(order.Status)">@order.Status</span>
+                            <div class="small text-muted mt-1">
+                                <span class="text-uppercase" style="font-size:.7rem; letter-spacing:.04em;">@Model.StagePhase(order.Status) Phase</span>
+                            </div>
+                        </td>
                         <td>
                             <form method="post" asp-page-handler="SchedulePickup" class="d-flex gap-2 align-items-center">
                                 <input type="hidden" name="OrderId" value="@order.Id" />
@@ -84,29 +100,44 @@
                             </form>
                         </td>
                         <td>
-                            <form method="post" asp-page-handler="AssignDriver" class="d-flex gap-2">
-                                <input type="hidden" name="OrderId" value="@order.Id" />
-                                <input type="hidden" name="Search" value="@Model.Search" />
-                                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
-                                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
-                                <select name="DriverId" class="form-select form-select-sm" style="min-width: 220px;">
-                                    <option value="">Select Driver</option>
-                                    @foreach (var driver in Model.DriverOptions)
+                            @if (Model.CanAssignPickup(order.Status) || Model.CanAssignDelivery(order.Status))
+                            {
+                                var assigningPickup = Model.CanAssignPickup(order.Status);
+                                var currentAssignment = assigningPickup ? Model.GetPickupAssignment(order) : Model.GetDeliveryAssignment(order);
+                                <form method="post" asp-page-handler="AssignDriver" class="d-flex gap-2">
+                                    <input type="hidden" name="OrderId" value="@order.Id" />
+                                    <input type="hidden" name="Search" value="@Model.Search" />
+                                    <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                    <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                    <select name="DriverId" class="form-select form-select-sm" style="min-width: 220px;">
+                                        <option value="">@(assigningPickup ? "Select Pickup Driver" : "Select Delivery Driver")</option>
+                                        @foreach (var driver in Model.DriverOptions)
+                                        {
+                                            var selectedDriverId = currentAssignment?.DriverId;
+                                            if (selectedDriverId?.ToString() == driver.Value)
+                                            {
+                                                <option value="@driver.Value" selected>@driver.Text</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@driver.Value">@driver.Text</option>
+                                            }
+                                        }
+                                    </select>
+                                    @if (assigningPickup)
                                     {
-                                        var selectedDriverId = Model.GetPickupAssignment(order)?.DriverId;
-                                        if (selectedDriverId?.ToString() == driver.Value)
-                                        {
-                                            <option value="@driver.Value" selected>@driver.Text</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="@driver.Value">@driver.Text</option>
-                                        }
+                                        <button class="btn btn-sm btn-outline-primary" type="submit" name="isPickup" value="true">Assign Pickup</button>
                                     }
-                                </select>
-                                <button class="btn btn-sm btn-outline-primary" type="submit" name="isPickup" value="true">Assign Pickup</button>
-                                <button class="btn btn-sm btn-outline-success" type="submit" name="isPickup" value="false">Assign Delivery</button>
-                            </form>
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" type="submit" name="isPickup" value="false">Assign Delivery</button>
+                                    }
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">@Model.StagePhase(order.Status) stage - driver assignment not available yet.</span>
+                            }
                             @{
                                 var pickupAssignment = Model.GetPickupAssignment(order);
                                 var deliveryAssignment = Model.GetDeliveryAssignment(order);
