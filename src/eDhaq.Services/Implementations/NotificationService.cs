@@ -45,9 +45,15 @@ public class NotificationService : INotificationService
         });
     }
 
-    public async Task<List<Notification>> GetUnreadAsync(string userId)
+        public async Task<List<Notification>> GetUnreadAsync(string userId)
         => await _db.Notifications
             .Where(n => n.UserId == userId && !n.IsRead)
+            .OrderByDescending(n => n.CreatedAt)
+            .ToListAsync();
+
+    public async Task<List<Notification>> GetAllAsync()
+        => await _db.Notifications
+            .Include(n => n.User)
             .OrderByDescending(n => n.CreatedAt)
             .ToListAsync();
 

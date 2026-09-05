@@ -210,8 +210,25 @@ public class OrderService : IOrderService
         });
     }
 
-    public async Task<int> GetCustomerOrderCountAsync(int customerId)
+        public async Task<int> GetCustomerOrderCountAsync(int customerId)
         => await _uow.Orders.GetCustomerOrderCountAsync(customerId);
+
+    public async Task<IEnumerable<OrderSummaryDto>> GetAllOrdersAsync(int page = 1, int pageSize = 20)
+    {
+        var orders = await _uow.Orders.GetAllAsync(page, pageSize);
+        return orders.Select(o => new OrderSummaryDto
+        {
+            Id = o.Id,
+            OrderNumber = o.OrderNumber,
+            Status = o.Status,
+            TotalAmount = o.TotalAmount,
+            CreatedAt = o.CreatedAt,
+            EstimatedCompletionAt = o.EstimatedCompletionAt,
+            CustomerName = o.Customer?.User != null
+                ? $"{o.Customer.User.FirstName} {o.Customer.User.LastName}".Trim()
+                : string.Empty
+        });
+    }
 
     public async Task<bool> UpdateStatusAsync(UpdateOrderStatusDto dto, string? actorUserId = null, string? actorName = null)
     {

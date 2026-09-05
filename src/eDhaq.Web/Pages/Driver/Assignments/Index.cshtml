@@ -36,8 +36,12 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
-                <tr>
+                                <tr>
                     <th>Order</th>
+                    @if (Model.IsAdmin)
+                    {
+                        <th>Driver</th>
+                    }
                     <th>Customer</th>
                     <th>Type</th>
                     <th>Status</th>
@@ -50,7 +54,11 @@
                 @foreach (var a in Model.Assignments)
                 {
                     <tr>
-                        <td>@a.Order.OrderNumber</td>
+                                            <td>@a.Order.OrderNumber</td>
+                        @if (Model.IsAdmin)
+                        {
+                            <td>@($"{a.Driver.User.FirstName} {a.Driver.User.LastName}".Trim())</td>
+                        }
                         <td>@a.Order.Customer.User.FirstName @a.Order.Customer.User.LastName</td>
                         <td>@(a.IsPickup ? "Pickup" : "Delivery")</td>
                         <td>@a.Status</td>

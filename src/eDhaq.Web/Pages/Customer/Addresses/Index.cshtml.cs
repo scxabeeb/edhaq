@@ -26,8 +26,17 @@ public class IndexModel : PageModel
     [BindProperty]
     public Address Input { get; set; } = new();
 
+        public bool IsAdmin => User?.IsInRole("Administrator") ?? false;
+
     public async Task<IActionResult> OnGetAsync()
     {
+        if (IsAdmin)
+        {
+            // Administrators see all addresses across all customers (read-only overview).
+            await LoadAllAsync();
+            return Page();
+        }
+
         var customer = await GetCustomerAsync();
         if (customer is null)
         {
@@ -39,8 +48,14 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAddAsync()
+        public async Task<IActionResult> OnPostAddAsync()
     {
+        if (IsAdmin)
+        {
+            TempData["ErrorMessage"] = "Address creation is not available from the admin overview. Use the Admin → Customers area to manage customer addresses.";
+            return RedirectToPage();
+        }
+
         var customer = await GetCustomerAsync();
         if (customer is null)
         {
@@ -90,25 +105,38 @@ public class IndexModel : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(int id)
+        public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
+        if (IsAdmin)
+        {
+            // Administrators can delete any address.
+            var entity = await _db.Addresses.FirstOrDefaultAsync(x => x.Id == id);
+            if (entity is not null)
+            {
+                _db.Addresses.Remove(entity);
+                await _db.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Address deleted.";
+            }
+            return RedirectToPage();
+        }
+
         var customer = await GetCustomerAsync();
         if (customer is null)
         {
             return RedirectToPage("/Customer/Index");
         }
 
-        var entity = await _db.Addresses.FirstOrDefaultAsync(x => x.Id == id && x.CustomerId == customer.Id);
-        if (entity is not null)
+        var ownedEntity = await _db.Addresses.FirstOrDefaultAsync(x => x.Id == id && x.CustomerId == customer.Id);
+        if (ownedEntity is not null)
         {
-            _db.Addresses.Remove(entity);
+            _db.Addresses.Remove(ownedEntity);
             await _db.SaveChangesAsync();
         }
 
         return RedirectToPage();
     }
 
-    private async Task LoadAsync(int customerId)
+        private async Task LoadAsync(int customerId)
     {
         Addresses = await _db.Addresses
             .Where(x => x.CustomerId == customerId)
@@ -143,6 +171,45 @@ public class IndexModel : PageModel
 
         SubVillageOptions = await _db.SubVillages
             .Where(x => x.VillageId == Input.VillageId && x.IsActive)
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync();
+    }
+
+    private async Task LoadAllAsync()
+    {
+        Addresses = await _db.Addresses
+            .Include(x => x.City)
+            .Include(x => x.Village)
+            .Include(x => x.SubVillage)
+            .Include(x => x.Customer)
+            .ThenInclude(c => c.User)
+            .OrderByDescending(x => x.IsDefault)
+            .ThenByDescending(x => x.CreatedAt)
+            .ToListAsync();
+
+        CityOptions = await _db.Cities
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync();
+
+        var defaultCityId = CityOptions.Count > 0 && int.TryParse(CityOptions[0].Value, out var firstCityId)
+            ? firstCityId
+            : 0;
+
+        VillageOptions = await _db.Villages
+            .Where(x => x.CityId == defaultCityId && x.IsActive)
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync();
+
+        var defaultVillageId = VillageOptions.Count > 0 && int.TryParse(VillageOptions[0].Value, out var firstVillageId)
+            ? firstVillageId
+            : 0;
+
+        SubVillageOptions = await _db.SubVillages
+            .Where(x => x.VillageId == defaultVillageId && x.IsActive)
             .OrderBy(x => x.Name)
             .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
             .ToListAsync();

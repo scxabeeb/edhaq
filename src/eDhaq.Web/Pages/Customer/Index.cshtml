@@ -1,15 +1,27 @@
 @page
 @model eDhaq.Web.Pages.Customer.IndexModel
 @{
-    ViewData["Title"] = "Customer Dashboard";
+    ViewData["Title"] = Model.IsAdmin ? "Customer Overview" : "Customer Dashboard";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="page-title mb-1">Welcome, @Model.Dashboard.CustomerName</h2>
+            <h2 class="page-title mb-1">
+        @if (Model.IsAdmin)
+        {
+            <text>Customer Overview</text>
+        }
+        else
+        {
+            <text>Welcome, @Model.Dashboard.CustomerName</text>
+        }
+    </h2>
         <p class="text-muted mb-0">Track and manage your laundry orders.</p>
     </div>
-    <a class="btn btn-edhaq" asp-page="/Customer/Orders/Create">Book Pickup</a>
+    @if (!Model.IsAdmin)
+    {
+        <a class="btn btn-edhaq" asp-page="/Customer/Orders/Create">Book Pickup</a>
+    }
 </div>
 
 <div class="row g-3 mb-4">

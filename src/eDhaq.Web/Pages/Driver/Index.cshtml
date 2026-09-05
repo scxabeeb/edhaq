@@ -56,8 +56,12 @@
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
-                        <tr>
+                                                <tr>
                             <th>Order</th>
+                            @if (Model.IsAdmin)
+                            {
+                                <th>Driver</th>
+                            }
                             <th>Customer</th>
                             <th>Type</th>
                             <th>Status</th>
@@ -69,8 +73,12 @@
                         @foreach (var task in Model.CurrentTasks)
                         {
                             <tr>
-                                <td>@task.Order.OrderNumber</td>
-                                <td>@task.Order.Customer.User.FirstName @task.Order.Customer.User.LastName</td>
+                                                                <td>@task.Order.OrderNumber</td>
+                                    @if (Model.IsAdmin)
+                                    {
+                                        <td>@($"{task.Driver.User.FirstName} {task.Driver.User.LastName}".Trim())</td>
+                                    }
+                                    <td>@task.Order.Customer.User.FirstName @task.Order.Customer.User.LastName</td>
                                 <td>
                                     <span class="badge @(task.IsPickup ? "text-bg-primary" : "text-bg-success")">
                                         @(task.IsPickup ? "Pickup" : "Delivery")

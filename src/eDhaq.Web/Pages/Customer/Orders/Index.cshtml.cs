@@ -19,12 +19,20 @@ public class IndexModel : PageModel
     }
 
     public List<OrderSummaryDto> Orders { get; private set; } = [];
+    public bool IsAdmin => User?.IsInRole("Administrator") ?? false;
 
     public async Task OnGetAsync()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrWhiteSpace(userId))
         {
+            return;
+        }
+
+        if (IsAdmin)
+        {
+            // Administrators see all orders across all customers.
+            Orders = (await _orderService.GetAllOrdersAsync(1, 25)).ToList();
             return;
         }
 

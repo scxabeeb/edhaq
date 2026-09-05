@@ -12,6 +12,8 @@ public interface IOrderRepository : IRepository<Order>
     Task<IEnumerable<Order>> GetByStatusAsync(OrderStatus status);
     Task<IEnumerable<Order>> GetTodaysOrdersAsync();
     Task<int> GetNextSequenceNumberAsync();
-    Task<decimal> GetTodaysRevenueAsync();
+        Task<decimal> GetTodaysRevenueAsync();
     Task<Dictionary<OrderStatus, int>> GetStatusCountsAsync();
+    Task<IEnumerable<Order>> GetAllAsync(int page = 1, int pageSize = 20);
+    Task<int> GetAllOrderCountAsync();
 }

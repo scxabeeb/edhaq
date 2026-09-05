@@ -43,7 +43,8 @@ public class OrderSummaryDto
     public OrderStatus Status { get; set; }
     public decimal TotalAmount { get; set; }
     public DateTime CreatedAt { get; set; }
-    public DateTime EstimatedCompletionAt { get; set; }
+        public DateTime EstimatedCompletionAt { get; set; }
+    public string? CustomerName { get; set; }
 }
 
 public class UpdateOrderStatusDto

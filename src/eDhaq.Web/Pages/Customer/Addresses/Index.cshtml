@@ -1,15 +1,17 @@
 @page
 @model eDhaq.Web.Pages.Customer.Addresses.IndexModel
 @{
-    ViewData["Title"] = "My Addresses";
+    ViewData["Title"] = Model.IsAdmin ? "All Addresses" : "My Addresses";
 }
 
-<h2 class="page-title mb-3">Addresses</h2>
+<h2 class="page-title mb-3">@(Model.IsAdmin ? "All Addresses" : "My Addresses")</h2>
 
-<div class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
-        <form method="post" asp-page-handler="Add" class="row g-2">
-            <div class="col-md-2"><input asp-for="Input.Label" class="form-control" placeholder="Label" /></div>
+@if (!Model.IsAdmin)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form method="post" asp-page-handler="Add" class="row g-2">
+                <div class="col-md-2"><input asp-for="Input.Label" class="form-control" placeholder="Label" /></div>
             <div class="col-md-3"><input asp-for="Input.Street" class="form-control" placeholder="Street / Landmark" /></div>
             <div class="col-md-2"><input asp-for="Input.District" class="form-control" placeholder="District" /></div>
             <div class="col-md-2"><select asp-for="Input.CityId" id="citySelect" class="form-select" asp-items="Model.CityOptions"></select></div>
@@ -20,19 +22,24 @@
                 </select>
             </div>
             <div class="col-md-1 form-check d-flex align-items-center"><input asp-for="Input.IsDefault" class="form-check-input" />Default</div>
-            <div class="col-md-1 d-grid"><button class="btn btn-edhaq" type="submit">Add</button></div>
-        </form>
-    </div>
-</div>
+                            <div class="col-md-1 d-grid"><button class="btn btn-edhaq" type="submit">Add</button></div>
+                        </form>
+                    </div>
+                </div>
+}
 
 <div class="card border-0 shadow-sm">
     <div class="card-body table-responsive">
         <table class="table table-hover">
-            <thead><tr><th>Label</th><th>Address</th><th>Village</th><th>City</th><th>Default</th><th></th></tr></thead>
+            <thead><tr>@if (Model.IsAdmin) { <th>Customer</th> }<th>Label</th><th>Address</th><th>Village</th><th>City</th><th>Default</th><th></th></tr></thead>
             <tbody>
             @foreach (var a in Model.Addresses)
             {
-                <tr>
+                                <tr>
+                    @if (Model.IsAdmin)
+                    {
+                        <td>@a.Customer.User.FirstName @a.Customer.User.LastName</td>
+                    }
                     <td>@a.Label</td>
                     <td>@a.Street</td>
                     <td>@a.Village.Name@(a.SubVillage is not null ? $" / {a.SubVillage.Name}" : string.Empty)</td>

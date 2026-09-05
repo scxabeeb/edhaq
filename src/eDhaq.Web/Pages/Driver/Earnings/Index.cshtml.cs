@@ -16,9 +16,10 @@ public class IndexModel : PageModel
         _db = db;
     }
 
-    public decimal TotalEarnings { get; private set; }
+        public decimal TotalEarnings { get; private set; }
     public int CompletedAssignments { get; private set; }
     public List<(string OrderNumber, DateTime Date, decimal Amount)> Latest { get; private set; } = [];
+    public bool IsAdmin => User?.IsInRole("Administrator") ?? false;
 
     public async Task OnGetAsync()
     {
@@ -28,15 +29,24 @@ public class IndexModel : PageModel
             return;
         }
 
+        var isAdmin = User.IsInRole("Administrator");
         var driver = await _db.Drivers.FirstOrDefaultAsync(x => x.UserId == userId);
-        if (driver is null)
+
+        if (driver is null && !isAdmin)
         {
             return;
         }
 
-        var completed = await _db.DriverAssignments
-            .Where(x => x.DriverId == driver.Id && x.Status == DriverJobAction.Completed)
+        var completedQuery = _db.DriverAssignments
             .Include(x => x.Order)
+            .Where(x => x.Status == DriverJobAction.Completed);
+
+        if (!isAdmin)
+        {
+            completedQuery = completedQuery.Where(x => x.DriverId == driver!.Id);
+        }
+
+                var completed = await completedQuery
             .OrderByDescending(x => x.CompletedAt)
             .ToListAsync();
 

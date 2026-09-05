@@ -26,9 +26,10 @@ public class IndexModel : PageModel
         _configuration = configuration;
     }
 
-    public List<DriverAssignment> Assignments { get; private set; } = [];
+        public List<DriverAssignment> Assignments { get; private set; } = [];
     public int TotalCount { get; private set; }
     public int PageSize { get; } = 15;
+    public bool IsAdmin => User?.IsInRole("Administrator") ?? false;
 
     [BindProperty(SupportsGet = true)]
     public int PageNumber { get; set; } = 1;
@@ -48,7 +49,7 @@ public class IndexModel : PageModel
     [BindProperty]
     public IFormFile? DeliveryPhoto { get; set; }
 
-    public async Task OnGetAsync()
+        public async Task OnGetAsync()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrWhiteSpace(userId))
@@ -56,33 +57,53 @@ public class IndexModel : PageModel
             return;
         }
 
+        var isAdmin = User.IsInRole("Administrator");
         var driver = await _db.Drivers.FirstOrDefaultAsync(x => x.UserId == userId);
-        if (driver is null && (User.IsInRole("PickupDriver") || User.IsInRole("DeliveryDriver") || User.IsInRole("Administrator")))
-        {
-            // Auto-create a Driver profile if the user has a driver/admin role
-            // but no Driver entity exists yet. This ensures the driver portal
-            // shows data instead of an empty assignments list.
-            driver = new eDhaq.Models.Entities.Driver
-            {
-                UserId = userId,
-                Status = DriverStatus.Offline,
-                CreatedAt = DateTime.UtcNow
-            };
-            _db.Drivers.Add(driver);
-            await _db.SaveChangesAsync();
-        }
 
         if (driver is null)
+        {
+            if (isAdmin)
+            {
+                // Administrators see ALL assignments across all drivers.
+                // No Driver profile is needed (and should not be auto-created).
+            }
+            else if (User.IsInRole("PickupDriver") || User.IsInRole("DeliveryDriver"))
+            {
+                // Auto-create a Driver profile if the user has a driver role
+                // but no Driver entity exists yet.
+                driver = new eDhaq.Models.Entities.Driver
+                {
+                    UserId = userId,
+                    Status = DriverStatus.Offline,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.Drivers.Add(driver);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        if (driver is null && !isAdmin)
         {
             return;
         }
 
-        var query = _db.DriverAssignments
-            .Where(x => x.DriverId == driver.Id)
+                var query = _db.DriverAssignments
             .Include(x => x.Order)
             .ThenInclude(x => x.Customer)
             .ThenInclude(x => x.User)
+            .Include(x => x.Driver)
+            .ThenInclude(x => x.User)
             .AsQueryable();
+
+        // Administrators see all assignments; regular drivers see only their own.
+        if (!isAdmin)
+        {
+            query = query.Where(x => x.DriverId == driver!.Id);
+        }
 
         if (!string.IsNullOrWhiteSpace(Search))
         {

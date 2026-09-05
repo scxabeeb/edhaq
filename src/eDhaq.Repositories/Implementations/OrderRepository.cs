@@ -69,11 +69,23 @@ public class OrderRepository : Repository<Order>, IOrderRepository
             .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
     }
 
-    public async Task<Dictionary<OrderStatus, int>> GetStatusCountsAsync()
+        public async Task<Dictionary<OrderStatus, int>> GetStatusCountsAsync()
     {
         return await _db.Orders
             .GroupBy(o => o.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Status, x => x.Count);
     }
+
+    public async Task<IEnumerable<Order>> GetAllAsync(int page = 1, int pageSize = 20)
+        => await _db.Orders
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(o => o.Customer)
+            .ThenInclude(c => c.User)
+            .ToListAsync();
+
+    public async Task<int> GetAllOrderCountAsync()
+        => await _db.Orders.CountAsync();
 }
