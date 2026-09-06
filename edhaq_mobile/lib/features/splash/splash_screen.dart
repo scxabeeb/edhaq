@@ -7,6 +7,7 @@ import '../../core/data/local/secure_storage_service.dart';
 import '../../core/data/models/user_model.dart';
 import '../../core/di/injection.dart';
 import '../../core/router/app_router.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/usecases/auth_usecases.dart';
 import '../../core/usecases/usecase.dart';
 
@@ -137,15 +138,22 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/logo.png',
-              width: 140,
-              height: 140,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Icon(
-                Icons.local_laundry_service,
-                size: 80,
+            Container(
+              width: 100,
+              height: 100,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
                 color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.local_laundry_service,
+                  size: 60,
+                  color: AppTheme.primaryColor,
+                ),
               ),
             ),
             const SizedBox(height: 24),

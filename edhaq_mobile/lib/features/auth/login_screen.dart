@@ -8,7 +8,6 @@ import '../../core/data/local/secure_storage_service.dart';
 import '../../core/data/models/auth_request_models.dart';
 import '../../core/di/injection.dart';
 import '../../core/router/app_router.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/usecases/auth_usecases.dart';
 import '../../core/widgets/app_logo.dart';
 
@@ -91,10 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo — brand-coloured background
+                  // Logo — white background so the red logo is visible
                   AppLogo(
                     size: 100,
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: Colors.white,
                   ),
                   const SizedBox(height: 24),
                   Text(

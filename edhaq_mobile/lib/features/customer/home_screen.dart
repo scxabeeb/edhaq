@@ -61,13 +61,22 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         centerTitle: true,
-        title: Image.asset(
-          'assets/images/logo.png',
-          height: 32,
-          fit: BoxFit.contain,
-          errorBuilder: (_, _, _) => const Icon(
-            Icons.local_laundry_service,
+        title: Container(
+          width: 44,
+          height: 44,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
             color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.local_laundry_service,
+              size: 28,
+              color: AppTheme.primaryColor,
+            ),
           ),
         ),
         actions: [
