@@ -18,6 +18,7 @@ public class DashboardController : ApiControllerBase
     private readonly IDriverRepository _driverRepository;
     private readonly IOrderService _orderService;
     private readonly INotificationService _notificationService;
+    private readonly ICustomerProfileService _customerProfileService;
     private readonly AppDbContext _db;
 
     public DashboardController(
@@ -25,12 +26,14 @@ public class DashboardController : ApiControllerBase
         IDriverRepository driverRepository,
         IOrderService orderService,
         INotificationService notificationService,
+        ICustomerProfileService customerProfileService,
         AppDbContext db)
     {
         _customerRepository = customerRepository;
         _driverRepository = driverRepository;
         _orderService = orderService;
         _notificationService = notificationService;
+        _customerProfileService = customerProfileService;
         _db = db;
     }
 
@@ -43,7 +46,7 @@ public class DashboardController : ApiControllerBase
             return Forbid();
         }
 
-        var customer = await _customerRepository.GetByUserIdAsync(userId);
+        var customer = await _customerProfileService.EnsureCustomerAsync(userId);
         if (customer is null)
         {
             return NotFound(new ProblemDetails { Title = "Customer profile not found." });

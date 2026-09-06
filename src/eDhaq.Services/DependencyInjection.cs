@@ -1,3 +1,5 @@
+using eDhaq.Data;
+using eDhaq.Models.Entities;
 using eDhaq.Services.Implementations;
 using eDhaq.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<ICustomerProfileService, CustomerProfileService>();
         return services;
     }
 }

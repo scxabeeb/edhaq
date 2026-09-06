@@ -21,6 +21,50 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool _hasMore = true;
   bool _loadingMore = false;
 
+  // Tab filter: 0 = New, 1 = Ongoing, 2 = Completed.
+  int _tab = 0;
+
+  static const _tabLabels = ['New', 'Ongoing', 'Completed'];
+
+  List<OrderSummaryModel> get _filteredOrders {
+    Iterable<OrderSummaryModel> filtered = _orders.where((o) {
+      switch (_tab) {
+        case 0: // New — just placed / awaiting pickup
+          return o.status == OrderStatus.orderPlaced ||
+              o.status == OrderStatus.pickupScheduled ||
+              o.status == OrderStatus.driverAssigned;
+        case 1: // Ongoing — driver en route through delivery
+          return o.status == OrderStatus.driverOnTheWay ||
+              o.status == OrderStatus.clothesPickedUp ||
+              o.status == OrderStatus.laundryReceived ||
+              o.status == OrderStatus.sorting ||
+              o.status == OrderStatus.washing ||
+              o.status == OrderStatus.dryCleaning ||
+              o.status == OrderStatus.drying ||
+              o.status == OrderStatus.ironing ||
+              o.status == OrderStatus.folding ||
+              o.status == OrderStatus.packaging ||
+              o.status == OrderStatus.readyForDelivery ||
+              o.status == OrderStatus.outForDelivery ||
+              o.status == OrderStatus.delivered;
+        case 2: // Completed (and cancelled)
+        default:
+          return o.status.isTerminal;
+      }
+    });
+    final list = filtered.toList();
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+
+  int _countForTab(int tab) {
+    final saved = _tab;
+    _tab = tab;
+    final count = _filteredOrders.length;
+    _tab = saved;
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -96,15 +140,51 @@ class _OrdersScreenState extends State<OrdersScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadOrders,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _buildError(theme)
-                : _orders.isEmpty
-                    ? _buildEmpty(theme)
-                    : _buildOrdersList(theme),
+      body: Column(
+        children: [
+          // Tab filter bar
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: List.generate(_tabLabels.length, (i) {
+                final selected = _tab == i;
+                final count = _isLoading ? 0 : _countForTab(i);
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: i < _tabLabels.length - 1 ? 8 : 0),
+                    child: ChoiceChip(
+                      label: Text(
+                        count > 0 ? '${_tabLabels[i]} ($count)' : _tabLabels[i],
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: selected ? Colors.white : null,
+                        ),
+                      ),
+                      selected: selected,
+                      selectedColor: AppTheme.primaryColor,
+                      showCheckmark: false,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) => setState(() => _tab = i),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadOrders,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? _buildError(theme)
+                      : _filteredOrders.isEmpty
+                          ? _buildEmpty(theme)
+                          : _buildOrdersList(theme),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.createOrder),
@@ -139,6 +219,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildEmpty(ThemeData theme) {
+    final messages = [
+      'No new orders.\nPlace your first laundry order!',
+      'No ongoing orders right now.',
+      'No completed orders yet.',
+    ];
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
@@ -150,27 +235,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'No orders yet',
+          messages[_tab],
           textAlign: TextAlign.center,
           style: theme.textTheme.titleLarge,
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Place your first laundry order!',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium,
-        ),
+        if (_tab == 0) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Tap + New Order below to get started.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildOrdersList(ThemeData theme) {
+    final visible = _filteredOrders;
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: _orders.length + (_hasMore ? 1 : 0),
+      itemCount: visible.length + (_tab == _tabLabels.length - 1 && _hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index >= _orders.length) {
+        if (index >= visible.length) {
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Center(
@@ -184,7 +272,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           );
         }
 
-        final order = _orders[index];
+        final order = visible[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(

@@ -18,6 +18,7 @@ public class OrdersController : ApiControllerBase
     private readonly ICustomerRepository _customerRepository;
     private readonly IDriverRepository _driverRepository;
     private readonly INotificationService _notificationService;
+    private readonly ICustomerProfileService _customerProfileService;
     private readonly AppDbContext _db;
 
     /// <summary>
@@ -34,12 +35,14 @@ public class OrdersController : ApiControllerBase
         ICustomerRepository customerRepository,
         IDriverRepository driverRepository,
         INotificationService notificationService,
+        ICustomerProfileService customerProfileService,
         AppDbContext db)
     {
         _orderService = orderService;
         _customerRepository = customerRepository;
         _driverRepository = driverRepository;
         _notificationService = notificationService;
+        _customerProfileService = customerProfileService;
         _db = db;
     }
 
@@ -802,7 +805,9 @@ public class OrdersController : ApiControllerBase
             return null;
         }
 
-        return await _customerRepository.GetByUserIdAsync(userId);
+        // Self-heal: create the customer profile (plus wallet) if the account
+        // was created without one, so customer endpoints never 404.
+        return await _customerProfileService.EnsureCustomerAsync(userId);
     }
 
     private async Task<Driver?> GetDriverAsync()
