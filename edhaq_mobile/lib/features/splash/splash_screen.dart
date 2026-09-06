@@ -139,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AppLogo(
-              size: 96,
+              size: 140,
               backgroundColor: Colors.white,
               showBrandBorder: true,
               borderRadius: 24,
