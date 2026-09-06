@@ -319,6 +319,11 @@ public class ProcessModel : PageModel
 
         await NotifyDriverNewTaskAsync(order, isPickup);
 
+        if (!isPickup)
+        {
+            await _orderService.NotifyCustomerPaymentRequiredAsync(order);
+        }
+
         TempData["SuccessMessage"] = isPickup ? "Pickup driver assigned." : "Delivery driver assigned.";
         return RedirectToPage(new { Search, StatusFilter, PageNumber });
     }

@@ -403,6 +403,57 @@ public class OrderService : IOrderService
             return true;
         }
 
+        // Lifecycle ordering: never allow the status to move backwards
+        // (e.g. LaundryReceived -> ClothesPickedUp) — this used to make the
+        // customer's app show the order regressing mid-flow.
+        if (LifecycleOrder.TryGetValue(current, out var currentIdx) &&
+            LifecycleOrder.TryGetValue(requested, out var requestedIdx))
+        {
+            return requestedIdx >= currentIdx;
+        }
+
         return true;
+    }
+
+    /// <summary>Forward lifecycle ordering used to block backwards status jumps.</summary>
+    private static readonly Dictionary<OrderStatus, int> LifecycleOrder = new()
+    {
+        [OrderStatus.OrderPlaced] = 0,
+        [OrderStatus.PickupScheduled] = 1,
+        [OrderStatus.DriverAssigned] = 2,
+        [OrderStatus.DriverOnTheWay] = 3,
+        [OrderStatus.ClothesPickedUp] = 4,
+        [OrderStatus.LaundryReceived] = 5,
+        [OrderStatus.Sorting] = 6,
+        [OrderStatus.Washing] = 7,
+        [OrderStatus.DryCleaning] = 8,
+        [OrderStatus.Drying] = 9,
+        [OrderStatus.Ironing] = 10,
+        [OrderStatus.Folding] = 11,
+        [OrderStatus.Packaging] = 12,
+        [OrderStatus.ReadyForDelivery] = 13,
+        [OrderStatus.OutForDelivery] = 14,
+        [OrderStatus.Delivered] = 15,
+        [OrderStatus.CustomerConfirmed] = 16,
+        [OrderStatus.Completed] = 17
+    };
+
+    /// <summary>Sends the customer a payment reminder (used when a delivery driver is assigned while the order is unpaid).</summary>
+    public async Task NotifyCustomerPaymentRequiredAsync(Order order)
+    {
+        if (order.PaymentStatus == PaymentStatus.Paid) return;
+
+        var customer = await _uow.Customers.GetByIdAsync(order.CustomerId);
+        if (customer?.UserId is null) return;
+
+        var ussdCode = string.Format("*884*442628*{0}#", Math.Round(order.TotalAmount, 2));
+
+        await _notificationService.CreateAsync(
+            customer.UserId,
+            "Payment required before delivery",
+            $"A delivery driver has been assigned to your order {order.OrderNumber}. Please clear the pending payment of ${order.TotalAmount:0.##} before delivery — dial {ussdCode} on your phone or pay from the app.",
+            NotificationType.PaymentReminder,
+            $"/Customer/Orders/Track?orderId={order.Id}",
+            order.Id);
     }
 }

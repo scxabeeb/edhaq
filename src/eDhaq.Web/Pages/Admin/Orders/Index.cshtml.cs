@@ -323,6 +323,11 @@ public class IndexModel : PageModel
 
         await NotifyDriverNewTaskAsync(order, isPickupAssignment);
 
+        if (!isPickupAssignment)
+        {
+            await _orderService.NotifyCustomerPaymentRequiredAsync(order);
+        }
+
         TempData["SuccessMessage"] = $"Driver assigned for {order.OrderNumber}.";
         return RedirectToPage(new { Search, StatusFilter, DateFrom, DateTo, DatePreset, SortBy, PageNumber });
     }

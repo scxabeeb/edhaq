@@ -543,19 +543,28 @@ public class OrdersController : ApiControllerBase
 
         if (assignment.IsPickup)
         {
-            await _orderService.UpdateStatusAsync(new UpdateOrderStatusDto
+            // Only move the status forward — if staff already marked the laundry
+            // stages, don't push the customer's app backwards (e.g. back to Picked Up).
+            if (assignment.Order.Status == OrderStatus.DriverOnTheWay ||
+                assignment.Order.Status == OrderStatus.DriverAssigned)
             {
-                OrderId = assignment.OrderId,
-                Status = OrderStatus.ClothesPickedUp,
-                Note = "Clothes picked up by driver."
-            }, userId, User.Identity?.Name);
+                await _orderService.UpdateStatusAsync(new UpdateOrderStatusDto
+                {
+                    OrderId = assignment.OrderId,
+                    Status = OrderStatus.ClothesPickedUp,
+                    Note = "Clothes picked up by driver."
+                }, userId, User.Identity?.Name);
+            }
 
-            await _orderService.UpdateStatusAsync(new UpdateOrderStatusDto
+            if ((int)assignment.Order.Status <= (int)OrderStatus.LaundryReceived)
             {
-                OrderId = assignment.OrderId,
-                Status = OrderStatus.LaundryReceived,
-                Note = "Clothes delivered to the laundry."
-            }, userId, User.Identity?.Name);
+                await _orderService.UpdateStatusAsync(new UpdateOrderStatusDto
+                {
+                    OrderId = assignment.OrderId,
+                    Status = OrderStatus.LaundryReceived,
+                    Note = "Clothes delivered to the laundry."
+                }, userId, User.Identity?.Name);
+            }
         }
         else
         {
@@ -788,6 +797,11 @@ public class OrdersController : ApiControllerBase
                 NotificationType.DriverAssigned,
                 actionUrl: "/Driver/Assignments",
                 orderId: order.Id);
+        }
+
+        if (!isPickupAssignment)
+        {
+            await _orderService.NotifyCustomerPaymentRequiredAsync(order);
         }
 
         return Ok(new { message = "Driver assigned successfully." });

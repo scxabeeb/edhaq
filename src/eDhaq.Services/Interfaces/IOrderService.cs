@@ -13,6 +13,9 @@ public interface IOrderService
     Task<IEnumerable<OrderSummaryDto>> GetAllOrdersAsync(int page = 1, int pageSize = 20);
     Task<int> GetCustomerOrderCountAsync(int customerId);
     Task<bool> UpdateStatusAsync(UpdateOrderStatusDto dto, string? actorUserId = null, string? actorName = null);
+
+    /// <summary>Sends the customer a payment reminder when a delivery driver is assigned while the order is unpaid.</summary>
+    Task NotifyCustomerPaymentRequiredAsync(Order order);
     Task<string> GenerateNextOrderNumberAsync();
     Task<Dictionary<OrderStatus, int>> GetOrderStatusCountsAsync();
 }
