@@ -349,6 +349,8 @@ public class OrdersController : ApiControllerBase
 
         var assignment = await _db.DriverAssignments
             .Include(x => x.Order)
+            .Include(x => x.Order).ThenInclude(o => o.Customer).ThenInclude(c => c.User)
+            .Include(x => x.Driver).ThenInclude(d => d.User)
             .FirstOrDefaultAsync(x => x.Id == assignmentId && x.DriverId == driver.Id);
 
         if (assignment is null)
@@ -384,6 +386,14 @@ public class OrdersController : ApiControllerBase
 
         await _db.SaveChangesAsync();
 
+        await NotifyCustomerAsync(assignment, assignment.IsPickup
+            ? "Pickup driver accepted"
+            : "Delivery driver accepted",
+            assignment.IsPickup
+                ? $"The pickup driver has accepted your task for order {assignment.Order.OrderNumber} and will arrive as scheduled."
+                : $"The delivery driver has accepted the delivery of your order {assignment.Order.OrderNumber}.",
+            NotificationType.DriverAssigned);
+
         return Ok(new { message = "Assignment accepted." });
     }
 
@@ -399,6 +409,8 @@ public class OrdersController : ApiControllerBase
 
         var assignment = await _db.DriverAssignments
             .Include(x => x.Order)
+            .Include(x => x.Order).ThenInclude(o => o.Customer).ThenInclude(c => c.User)
+            .Include(x => x.Driver).ThenInclude(d => d.User)
             .FirstOrDefaultAsync(x => x.Id == assignmentId && x.DriverId == driver.Id);
 
         if (assignment is null)
@@ -444,6 +456,14 @@ public class OrdersController : ApiControllerBase
             }, userId, User.Identity?.Name);
         }
 
+        await NotifyCustomerAsync(assignment, assignment.IsPickup
+            ? "Your pickup driver is on the way"
+            : "Your delivery driver is on the way",
+            assignment.IsPickup
+                ? $"The pickup driver for order {assignment.Order.OrderNumber} is now on the way to your address."
+                : $"The delivery driver for order {assignment.Order.OrderNumber} is now on the way to your address.",
+            assignment.IsPickup ? NotificationType.DriverAssigned : NotificationType.OutForDelivery);
+
         return Ok(new { message = "Customer notified: driver is on the way." });
     }
 
@@ -459,6 +479,8 @@ public class OrdersController : ApiControllerBase
 
         var assignment = await _db.DriverAssignments
             .Include(x => x.Order)
+            .Include(x => x.Order).ThenInclude(o => o.Customer).ThenInclude(c => c.User)
+            .Include(x => x.Driver).ThenInclude(d => d.User)
             .FirstOrDefaultAsync(x => x.Id == assignmentId && x.DriverId == driver.Id);
 
         if (assignment is null)
@@ -483,6 +505,12 @@ public class OrdersController : ApiControllerBase
             Note = note
         }, userId, User.Identity?.Name);
 
+        await NotifyCustomerAsync(assignment, "Your driver is at the gate",
+            assignment.IsPickup
+                ? $"The pickup driver for order {assignment.Order.OrderNumber} has arrived and is waiting at the gate."
+                : $"The delivery driver for order {assignment.Order.OrderNumber} has arrived and is waiting at the gate.",
+            NotificationType.General);
+
         return Ok(new { message = "Customer notified: driver is at the gate." });
     }
 
@@ -498,6 +526,8 @@ public class OrdersController : ApiControllerBase
 
         var assignment = await _db.DriverAssignments
             .Include(x => x.Order)
+            .Include(x => x.Order).ThenInclude(o => o.Customer).ThenInclude(c => c.User)
+            .Include(x => x.Driver).ThenInclude(d => d.User)
             .FirstOrDefaultAsync(x => x.Id == assignmentId && x.DriverId == driver.Id);
 
         if (assignment is null)
@@ -592,6 +622,14 @@ public class OrdersController : ApiControllerBase
 
         await _db.SaveChangesAsync();
 
+        await NotifyCustomerAsync(assignment, assignment.IsPickup
+            ? "Clothes picked up"
+            : "Order delivered",
+            assignment.IsPickup
+                ? $"Your clothes for order {assignment.Order.OrderNumber} have been picked up and delivered to the laundry."
+                : $"Your order {assignment.Order.OrderNumber} has been delivered. Thank you for choosing eDhaq!",
+            assignment.IsPickup ? NotificationType.LaundryStarted : NotificationType.Delivered);
+
         return Ok(new { message = "Assignment completed." });
     }
 
@@ -628,6 +666,13 @@ public class OrdersController : ApiControllerBase
         assignment.Order.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        await _notificationService.CreateAsync(
+            assignment.Order.Customer.UserId,
+            "Payment received",
+            $"Your payment of ${assignment.Order.TotalAmount:0.##} for order {assignment.Order.OrderNumber} has been collected by the driver. Thank you!",
+            NotificationType.PaymentConfirmed,
+            orderId: assignment.OrderId);
 
         return Ok(new { message = "Payment collected successfully." });
     }
@@ -822,6 +867,30 @@ public class OrdersController : ApiControllerBase
         // Self-heal: create the customer profile (plus wallet) if the account
         // was created without one, so customer endpoints never 404.
         return await _customerProfileService.EnsureCustomerAsync(userId);
+    }
+
+    /// <summary>Notifies the customer of a driver task action (accept / on the way / at gate / complete).</summary>
+    private async Task NotifyCustomerAsync(DriverAssignment assignment, string title, string message, NotificationType type)
+    {
+        var customerUser = assignment.Order.Customer?.User;
+        if (customerUser is null) return;
+
+        var driverName = assignment.Driver?.User != null
+            ? $"{assignment.Driver.User.FirstName} {assignment.Driver.User.LastName}".Trim()
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(driverName))
+        {
+            message = $"{driverName}: {message}";
+        }
+
+        await _notificationService.CreateAsync(
+            customerUser.Id,
+            title,
+            message,
+            type,
+            $"/Customer/Orders/Track?orderId={assignment.OrderId}",
+            assignment.OrderId);
     }
 
     private async Task<Driver?> GetDriverAsync()

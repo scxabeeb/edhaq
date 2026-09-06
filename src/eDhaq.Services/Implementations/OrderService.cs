@@ -275,6 +275,25 @@ public class OrderService : IOrderService
                 order.Id);
         }
 
+        // ── Notify assigned (non-completed) drivers about the status change ──
+        var activeAssignments = await _db.DriverAssignments
+            .Include(a => a.Driver).ThenInclude(d => d.User)
+            .Where(a => a.OrderId == order.Id && a.Status != DriverJobAction.Completed)
+            .ToListAsync();
+
+        foreach (var assignment in activeAssignments)
+        {
+            var driverUser = assignment.Driver?.User;
+            if (driverUser is null || driverUser.Id == actorUserId) continue;
+
+            await _notificationService.CreateAsync(driverUser.Id,
+                "Order status update",
+                $"Order {order.OrderNumber} ({(assignment.IsPickup ? "pickup" : "delivery")} task) status is now {dto.Status}.",
+                NotificationType.General,
+                actionUrl: "/Driver/Assignments",
+                orderId: order.Id);
+        }
+
         // ── Payment clearance reminder when the order is marked Delivered but not yet paid ──
         if (dto.Status == OrderStatus.Delivered && order.PaymentStatus != PaymentStatus.Paid && customer is not null)
         {
