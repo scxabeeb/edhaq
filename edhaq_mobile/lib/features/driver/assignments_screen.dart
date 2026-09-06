@@ -649,47 +649,41 @@ class _AssignmentCard extends StatelessWidget {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
                     if (assignment.canAccept)
-                      ElevatedButton.icon(
+                      _smallButton(
+                        label: 'Accept',
+                        icon: Icons.check,
                         onPressed: onAccept,
-                        icon: const Icon(Icons.check, size: 16),
-                        label: const Text('Accept'),
                       ),
                     if (assignment.action == DriverJobAction.accepted) ...[
-                      ElevatedButton.icon(
+                      _smallButton(
+                        label: 'On the Way',
+                        icon: Icons.directions_car,
                         onPressed: onNotifyOnTheWay,
-                        icon: const Icon(Icons.directions_car, size: 16),
-                        label: const Text('On the Way'),
                       ),
-                      ElevatedButton.icon(
+                      _smallButton(
+                        label: 'At Gate',
+                        icon: Icons.home_work_outlined,
                         onPressed: onNotifyAtGate,
-                        icon: const Icon(Icons.home_work_outlined, size: 16),
-                        label: const Text('At Gate'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentColor,
-                        ),
+                        color: AppTheme.accentColor,
                       ),
                     ],
-                    if (assignment.canComplete)
-                      ElevatedButton.icon(
-                        onPressed: onComplete,
-                        icon: const Icon(Icons.done, size: 16),
-                        label: const Text('Complete'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.secondaryColor,
-                        ),
-                      ),
                     if (assignment.canCollectPayment)
-                      ElevatedButton.icon(
+                      _smallButton(
+                        label: 'Collect Payment',
+                        icon: Icons.payments,
                         onPressed: onCollectPayment,
-                        icon: const Icon(Icons.payments, size: 16),
-                        label: const Text('Collect Payment'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentColor,
-                        ),
+                        color: AppTheme.accentColor,
+                      ),
+                    if (assignment.canComplete)
+                      _smallButton(
+                        label: 'Complete',
+                        icon: Icons.done,
+                        onPressed: onComplete,
+                        color: AppTheme.secondaryColor,
                       ),
                   ],
                 ),
@@ -699,6 +693,27 @@ class _AssignmentCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _smallButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 13),
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: const Size(0, 28),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
       ),
     );
   }

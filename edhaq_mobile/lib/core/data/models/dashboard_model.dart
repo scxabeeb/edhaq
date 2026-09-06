@@ -296,7 +296,9 @@ class DriverAssignmentDetailModel extends Equatable {
   bool get canComplete =>
       action == DriverJobAction.accepted;
   bool get canCollectPayment =>
-      !isPickup && action == DriverJobAction.completed && paymentStatus != PaymentStatus.paid;
+      !isPickup &&
+      (action == DriverJobAction.accepted || isCompleted) &&
+      paymentStatus != PaymentStatus.paid;
   bool get isPaymentCollected => paymentStatus == PaymentStatus.paid;
 
   @override

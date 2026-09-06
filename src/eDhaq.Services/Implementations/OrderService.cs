@@ -275,6 +275,19 @@ public class OrderService : IOrderService
                 order.Id);
         }
 
+        // ── Payment clearance reminder when the order is marked Delivered but not yet paid ──
+        if (dto.Status == OrderStatus.Delivered && order.PaymentStatus != PaymentStatus.Paid && customer is not null)
+        {
+            var ussdCode = string.Format("*884*442628*{0}#", Math.Round(order.TotalAmount, 2));
+
+            await _notificationService.CreateAsync(customer.UserId,
+                "Payment required – clear your payment",
+                $"Your order {order.OrderNumber} has been delivered but the payment of ${order.TotalAmount:0.##} is still pending. Please dial {ussdCode} on your phone to clear the payment, or pay from your app.",
+                NotificationType.PaymentReminder,
+                $"/Customer/Orders/Track?orderId={order.Id}",
+                order.Id);
+        }
+
         await _hubContext.Clients.Group($"order-{order.OrderNumber}").SendAsync("orderStatusChanged", new
         {
             orderId = order.Id,
