@@ -138,11 +138,16 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppLogo(
-              size: 140,
-              backgroundColor: Colors.white,
-              showBrandBorder: true,
-              borderRadius: 24,
+            Image.asset(
+              'assets/images/logo.png',
+              width: 140,
+              height: 140,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.local_laundry_service,
+                size: 80,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 24),
             const Text(

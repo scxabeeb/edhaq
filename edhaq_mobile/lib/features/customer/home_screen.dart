@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         centerTitle: true,
         title: Image.asset(
-          'assets/images/logo_white.png',
+          'assets/images/logo.png',
           height: 32,
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => const Icon(
