@@ -60,27 +60,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: 28,
-                width: 28,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.local_laundry_service,
-                  size: 26,
-                  color: AppTheme.primaryColor,
-                ),
+        centerTitle: false,
+        titleSpacing: 8,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              width: 32,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.local_laundry_service,
+                size: 28,
+                color: AppTheme.primaryColor,
               ),
             ),
-            const SizedBox(width: 8),
-            const Text('eDhaq'),
-          ],
+          ),
         ),
+        title: const Text('eDhaq'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
