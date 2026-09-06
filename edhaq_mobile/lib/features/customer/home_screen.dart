@@ -64,16 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
         titleSpacing: 8,
         leading: Padding(
           padding: const EdgeInsets.only(left: 8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+          child: Center(
             child: Image.asset(
               'assets/images/logo.png',
-              height: 32,
-              width: 32,
-              fit: BoxFit.cover,
+              height: 24,
+              width: 24,
+              fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const Icon(
                 Icons.local_laundry_service,
-                size: 28,
+                size: 22,
                 color: AppTheme.primaryColor,
               ),
             ),
