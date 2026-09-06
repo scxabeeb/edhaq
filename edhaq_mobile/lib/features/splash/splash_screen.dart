@@ -9,7 +9,6 @@ import '../../core/di/injection.dart';
 import '../../core/router/app_router.dart';
 import '../../core/usecases/auth_usecases.dart';
 import '../../core/usecases/usecase.dart';
-import '../../core/widgets/app_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
