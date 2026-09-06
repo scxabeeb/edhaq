@@ -65,22 +65,15 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 8),
           child: Center(
-            child: Container(
-              width: 36,
-              height: 36,
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
+            child: Image.asset(
+              'assets/images/logo_white.png',
+              height: 24,
+              width: 24,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.local_laundry_service,
+                size: 22,
                 color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.local_laundry_service,
-                  size: 22,
-                  color: AppTheme.primaryColor,
-                ),
               ),
             ),
           ),
