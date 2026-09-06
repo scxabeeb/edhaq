@@ -139,10 +139,10 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AppLogo(
-              size: 110,
-              backgroundColor: Colors.transparent,
-              showBrandBorder: false,
-              borderRadius: 0,
+              size: 96,
+              backgroundColor: Colors.white,
+              showBrandBorder: true,
+              borderRadius: 24,
             ),
             const SizedBox(height: 24),
             const Text(

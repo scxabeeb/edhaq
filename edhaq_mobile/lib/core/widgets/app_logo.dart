@@ -4,10 +4,10 @@ import '../theme/app_theme.dart';
 /// Reusable eDhaq logo widget that prominently features the brand
 /// primary colour.
 ///
-/// Renders the **white** logo silhouette (transparent background) on
-/// [backgroundColor], which defaults to [AppTheme.primaryColor] so the
-/// brand red is behind it and the white mark pops.  Pass a transparent
-/// background when the logo sits directly on a red surface (splash).
+/// [backgroundColor] defaults to [AppTheme.primaryColor] so the brand
+/// red (#D71920) is the dominant colour behind the logo.  Pass an
+/// explicit white background (with the brand border) when the logo must
+/// sit on a surface that is already the brand colour (e.g. splash).
 class AppLogo extends StatelessWidget {
   final double size;
   final Color backgroundColor;
@@ -34,11 +34,19 @@ class AppLogo extends StatelessWidget {
         border: showBrandBorder
             ? Border.all(color: AppTheme.primaryColor, width: 3)
             : null,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius > 4 ? borderRadius - 4 : 0),
+        borderRadius:
+            BorderRadius.circular(borderRadius > 4 ? borderRadius - 4 : 0),
         child: Image.asset(
-          'assets/images/logo_white.png',
+          'assets/images/logo.png',
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => Icon(
             Icons.local_laundry_service,
