@@ -210,6 +210,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit Profile'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await context.push(AppRoutes.editProfile, extra: user);
+                  if (!mounted) return;
+                  _loadUser();
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
                 leading: const Icon(Icons.location_on_outlined),
                 title: const Text('My Addresses'),
                 trailing: const Icon(Icons.chevron_right),

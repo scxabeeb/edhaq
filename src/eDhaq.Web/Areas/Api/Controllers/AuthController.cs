@@ -206,6 +206,88 @@ public class AuthController : ApiControllerBase
         return Ok(userInfo);
     }
 
+    [HttpPut("profile")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<ActionResult<UserInfoDto>> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+        {
+            return BadRequest(new ProblemDetails { Title = "First name and last name are required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+        {
+            return BadRequest(new ProblemDetails { Title = "A valid email address is required." });
+        }
+
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(new ProblemDetails { Title = "Authentication is required." });
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return NotFound(new ProblemDetails { Title = "User not found." });
+        }
+
+        // Email changes: keep UserName in sync (UserName == email in this app).
+        var newEmail = request.Email.Trim().ToLowerInvariant();
+        if (!string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            var emailTaken = await _userManager.Users
+                .AnyAsync(u => u.Id != user.Id && u.NormalizedEmail == newEmail.ToUpperInvariant());
+            if (emailTaken)
+            {
+                return Conflict(new ProblemDetails { Title = "This email is already in use by another account." });
+            }
+
+            var userNameResult = await _userManager.SetUserNameAsync(user, newEmail);
+            if (!userNameResult.Succeeded)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Unable to update email.",
+                    Detail = string.Join(" ", userNameResult.Errors.Select(e => e.Description))
+                });
+            }
+
+            var emailResult = await _userManager.SetEmailAsync(user, newEmail);
+            if (!emailResult.Succeeded)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Unable to update email.",
+                    Detail = string.Join(" ", emailResult.Errors.Select(e => e.Description))
+                });
+            }
+        }
+
+        user.FirstName = request.FirstName.Trim();
+        user.LastName = request.LastName.Trim();
+        user.PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Unable to update profile.",
+                Detail = string.Join(" ", updateResult.Errors.Select(e => e.Description))
+            });
+        }
+
+        var roles = (await _userManager.GetRolesAsync(user)).ToList();
+        var customer = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+
+        var userInfo = UserDtos.ToUserInfo(user, roles);
+        userInfo.CustomerId = customer?.Id;
+        userInfo.WalletBalance = customer?.WalletBalance ?? 0;
+
+        return Ok(userInfo);
+    }
+
     [HttpPost("logout")]
     [AllowAnonymous]
     public async Task<IActionResult> Logout()

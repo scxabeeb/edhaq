@@ -49,6 +49,18 @@ class ApiService {
     await _post('${AppConstants.authPath}/change-password', data: request.toJson());
   }
 
+  Future<AppUser> updateProfile(UpdateProfileRequest request) async {
+    final response =
+        await _put('${AppConstants.authPath}/profile', data: request.toJson());
+    return AppUser.fromJson(_toMap(response.data));
+  }
+
+  Future<Response<T>> _put<T>(
+    String path, {
+    Object? data,
+  }) =>
+      _dio.put<T>(path, data: data);
+
   // ════════════════════════════════════════════════════════════════════════
   //  Location endpoints  —  /api/locations
   // ════════════════════════════════════════════════════════════════════════
