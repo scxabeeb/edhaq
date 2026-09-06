@@ -60,7 +60,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('eDhaq'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 28,
+                width: 28,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.local_laundry_service,
+                  size: 26,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('eDhaq'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
@@ -193,6 +213,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => context.push(AppRoutes.addresses),
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionCard(
+                icon: Icons.support_agent,
+                label: 'Contact Us',
+                onTap: () => context.push(AppRoutes.contact),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: SizedBox.shrink()),
+            const SizedBox(width: 12),
+            const Expanded(child: SizedBox.shrink()),
           ],
         ),
         const SizedBox(height: 24),

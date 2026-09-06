@@ -36,6 +36,9 @@ public static class DbInitializer
             await SeedAdminUserAsync(userManager, db, logger);
             await SeedDemoCustomerAsync(userManager, db, logger);
 
+            // Seed default support-contact settings (public AppSettings)
+            await SeedSupportContactsAsync(db, logger);
+
             await db.SaveChangesAsync();
             logger.LogInformation("Database initialization completed. Roles and default users seeded.");
         }
@@ -216,5 +219,33 @@ public static class DbInitializer
         });
 
         logger.LogInformation("Seeded demo customer: {Email} / Customer@123!", email);
+    }
+
+    // Default public support contacts shown in the mobile apps.
+    private static async Task SeedSupportContactsAsync(AppDbContext db, ILogger logger)
+    {
+        var defaults = new (string Key, string Value, string Description)[]
+        {
+            ("Support.Phone", "+967771234567", "Support phone number shown in the mobile app."),
+            ("Support.Whatsapp", "+967771234567", "Support WhatsApp number shown in the mobile app."),
+            ("Support.Email", "support@edhaq.com", "Support email shown in the mobile app."),
+            ("Support.WorkingHours", "Sat - Thu, 8:00 AM - 10:00 PM", "Support working hours shown in the mobile app."),
+        };
+
+        foreach (var (key, value, description) in defaults)
+        {
+            if (!await db.AppSettings.AnyAsync(s => s.Key == key))
+            {
+                db.AppSettings.Add(new AppSetting
+                {
+                    Key = key,
+                    Value = value,
+                    Description = description,
+                    IsPublic = true,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                logger.LogInformation("Seeded support contact setting: {Key}", key);
+            }
+        }
     }
 }

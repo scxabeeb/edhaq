@@ -236,6 +236,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(AppRoutes.changePassword),
               ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.support_agent),
+                title: const Text('Contact Support'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(AppRoutes.contact),
+              ),
             ],
           ),
         ),

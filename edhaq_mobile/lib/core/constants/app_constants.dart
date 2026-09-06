@@ -30,6 +30,13 @@ class AppConstants {
   static const String ordersPath = '/api/orders';
   static const String notificationsPath = '/api/notifications';
   static const String usersPath = '/api/users';
+  static const String contactsPath = '/api/contacts';
+
+  // Staff contact details (customer support)
+  static const String supportPhone = '+967771234567';
+  static const String supportWhatsapp = '+967771234567';
+  static const String supportEmail = 'support@edhaq.com';
+  static const String supportWorkingHours = 'Sat - Thu, 8:00 AM - 10:00 PM';
 }
 
 enum AppRole {

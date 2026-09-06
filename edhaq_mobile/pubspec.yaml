@@ -35,6 +35,9 @@ dependencies:
   fluttertoast: ^8.2.8
   image_picker: ^1.1.2
 
+  # Contact staff (call / WhatsApp / email)
+  url_launcher: ^6.3.0
+
   # Local notifications (new task / notification alerts)
   flutter_local_notifications: ^17.2.3
 

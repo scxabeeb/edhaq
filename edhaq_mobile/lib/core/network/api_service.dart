@@ -7,6 +7,7 @@ import '../data/models/location_models.dart';
 import '../data/models/notification_model.dart';
 import '../data/models/order_models.dart';
 import '../data/models/service_models.dart';
+import '../data/models/support_contacts_model.dart';
 import '../data/models/user_model.dart';/// Thin wrapper around [Dio] that exposes typed methods for every
 /// backend API endpoint.
 ///
@@ -318,6 +319,15 @@ class ApiService {
       '${AppConstants.ordersPath}/admin/assign-driver',
       data: request.toJson(),
     );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  //  Support contacts  —  /api/contacts
+  // ════════════════════════════════════════════════════════════════════════
+
+  Future<SupportContactsModel> getContacts() async {
+    final response = await _get(AppConstants.contactsPath);
+    return SupportContactsModel.fromJson(_toMap(response.data));
   }
 
   // ════════════════════════════════════════════════════════════════════════
