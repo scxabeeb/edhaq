@@ -7,6 +7,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/usecases/dashboard_usecases.dart';
 import '../../core/usecases/usecase.dart';
+import '../../core/widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -66,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => context.push(AppRoutes.profile),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: const NotificationBell(iconSize: 24),
             onPressed: () => context.push(AppRoutes.notifications),
           ),
         ],

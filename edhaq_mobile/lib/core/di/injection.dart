@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import '../services/notification_polling_service.dart';
 import '../data/local/secure_storage_service.dart';
 import '../data/repositories/address_repository.dart';
 import '../data/repositories/auth_repository.dart';
@@ -160,6 +161,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<MarkNotificationAsReadUseCase>(
     () => MarkNotificationAsReadUseCase(sl<NotificationRepository>()),
+  );
+  sl.registerLazySingleton<NotificationPollingService>(
+    () => NotificationPollingService(sl<GetNotificationsUseCase>()),
   );
 
   // Dashboard

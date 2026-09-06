@@ -43,10 +43,30 @@ public class ProcessModel : PageModel
         [OrderStatus.Packaging] = OrderStatus.ReadyForDelivery
     };
 
-    public ProcessModel(AppDbContext db, IOrderService orderService)
+    public ProcessModel(AppDbContext db, IOrderService orderService, INotificationService notificationService)
     {
         _db = db;
         _orderService = orderService;
+        _notificationService = notificationService;
+    }
+
+    private readonly INotificationService _notificationService;
+
+    private async Task NotifyDriverNewTaskAsync(Order order, bool isPickup)
+    {
+        var driver = await _db.Drivers
+            .Include(d => d.User)
+            .FirstOrDefaultAsync(d => d.Id == DriverId);
+        if (driver?.User is null) return;
+
+        var task = isPickup ? "pickup" : "delivery";
+        await _notificationService.CreateAsync(
+            driver.User.Id,
+            $"New {task} task",
+            $"A new {task} task for order {order.OrderNumber} (${order.TotalAmount:0.##}) has been assigned to you. Open the app to accept it.",
+            NotificationType.DriverAssigned,
+            actionUrl: "/Driver/Assignments",
+            orderId: order.Id);
     }
 
     public List<Order> Orders { get; private set; } = [];
@@ -296,6 +316,8 @@ public class ProcessModel : PageModel
 
         order.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        await NotifyDriverNewTaskAsync(order, isPickup);
 
         TempData["SuccessMessage"] = isPickup ? "Pickup driver assigned." : "Delivery driver assigned.";
         return RedirectToPage(new { Search, StatusFilter, PageNumber });

@@ -7,6 +7,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/usecases/dashboard_usecases.dart';
 import '../../core/usecases/usecase.dart';
+import '../../core/widgets/notification_bell.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -61,10 +62,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       appBar: AppBar(
         title: const Text('Driver Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => context.push(AppRoutes.notifications),
-          ),
+          const NotificationBell(),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => context.push(AppRoutes.profile),

@@ -774,6 +774,19 @@ public class OrdersController : ApiControllerBase
 
         await _db.SaveChangesAsync();
 
+        var driver = await _db.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.Id == request.DriverId);
+        if (driver?.User is not null)
+        {
+            var task = isPickupAssignment ? "pickup" : "delivery";
+            await _notificationService.CreateAsync(
+                driver.User.Id,
+                $"New {task} task",
+                $"A new {task} task for order {order.OrderNumber} (${order.TotalAmount:0.##}) has been assigned to you. Open the app to accept it.",
+                NotificationType.DriverAssigned,
+                actionUrl: "/Driver/Assignments",
+                orderId: order.Id);
+        }
+
         return Ok(new { message = "Driver assigned successfully." });
     }
 
