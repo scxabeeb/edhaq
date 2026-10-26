@@ -1,0 +1,75 @@
+@page
+@model SupportModel
+@{
+    ViewData["Title"] = "Support";
+}
+
+<div class="legal">
+    <header class="legal-header">
+        <span class="badge-soft badge-soft-primary">Help centre</span>
+        <h1>How can we help?</h1>
+        <p class="legal-meta">Our team is available @Model.WorkingHours.</p>
+    </header>
+
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <a class="support-card" href="tel:@Model.Phone">
+                <span class="support-icon"><i class="bi bi-telephone-fill"></i></span>
+                <strong>Call us</strong>
+                <span>@Model.Phone</span>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a class="support-card" href="@Model.WhatsappLink" target="_blank" rel="noopener">
+                <span class="support-icon support-icon-green"><i class="bi bi-whatsapp"></i></span>
+                <strong>WhatsApp</strong>
+                <span>@Model.Whatsapp</span>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a class="support-card" href="mailto:@Model.Email">
+                <span class="support-icon support-icon-blue"><i class="bi bi-envelope-fill"></i></span>
+                <strong>Email</strong>
+                <span>@Model.Email</span>
+            </a>
+        </div>
+    </div>
+
+    <h2>Frequently asked questions</h2>
+    <div class="accordion faq" id="faq">
+        @{
+            var faqs = new (string Q, string A)[]
+            {
+                ("How does e-Dhaq work?",
+                 "Place an order in the app or on the website and choose your services and a pickup time. A driver collects your laundry, we clean it, and a driver brings it back to your door. You can follow every step in the app."),
+                ("How do I pay?",
+                 "You pay on delivery. When the driver brings your laundry back, pay in cash or by mobile money (EVC Plus, ZAAD, eDahab, Sahal or MyCash). The driver records the payment and your receipt appears under Payments. You never need to pay inside the app."),
+                ("How do I track my order?",
+                 "Open the app and tap your order under Recent orders or My Orders. You'll see its current stage, from pickup and washing through to delivery, and you'll get a notification at each step."),
+                ("I forgot my password. How do I reset it?",
+                 "On the sign-in screen, tap \"Forgot password?\" and enter the email address you registered with. We'll email you a 6-digit code — enter it with your new password. Codes expire after a few minutes; check your spam folder if you don't see the email."),
+                ("How do I change my name, email or phone number?",
+                 "Go to Profile → Edit profile in the app. If you change your email, use the new address to sign in next time."),
+                ("Something is wrong with my order.",
+                 "Contact us by phone, WhatsApp or email with your order number (for example EDQ-2026-000123), and we'll sort it out as quickly as possible."),
+                ("How do I delete my account?",
+                 $"Email {Model.Email} from the address on your account with the subject \"Delete my account\". We'll delete your account and personal data within 30 days, keeping only records we're legally required to keep. See our Privacy Policy for details."),
+            };
+        }
+        @for (var i = 0; i < faqs.Length; i++)
+        {
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button @(i == 0 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#faq-@i" aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="faq-@i">
+                        @faqs[i].Q
+                    </button>
+                </h3>
+                <div id="faq-@i" class="accordion-collapse collapse @(i == 0 ? "show" : "")" data-bs-parent="#faq">
+                    <div class="accordion-body">@faqs[i].A</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <p class="legal-meta mt-4">Read how we handle your data in our <a asp-page="/Privacy">Privacy Policy</a>.</p>
+</div>
