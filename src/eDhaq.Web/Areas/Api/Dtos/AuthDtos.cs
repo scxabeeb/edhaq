@@ -31,6 +31,19 @@ public class ChangePasswordRequest
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
 public class UpdateProfileRequest
 {
     public string FirstName { get; set; } = string.Empty;

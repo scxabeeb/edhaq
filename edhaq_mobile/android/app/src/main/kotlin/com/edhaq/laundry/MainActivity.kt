@@ -1,4 +1,4 @@
-package com.edhaq.mobile.edhaq_mobile
+package com.edhaq.laundry
 
 import io.flutter.embedding.android.FlutterActivity
 

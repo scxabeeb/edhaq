@@ -293,8 +293,9 @@ class DriverAssignmentDetailModel extends Equatable {
 
   bool get isCompleted => action == DriverJobAction.completed;
   bool get canAccept => action == DriverJobAction.pending;
+  /// Deliveries can only be completed once the driver has collected payment.
   bool get canComplete =>
-      action == DriverJobAction.accepted;
+      action == DriverJobAction.accepted && (isPickup || isPaymentCollected);
   bool get canCollectPayment =>
       !isPickup &&
       (action == DriverJobAction.accepted || isCompleted) &&

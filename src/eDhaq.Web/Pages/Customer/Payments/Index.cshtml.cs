@@ -1,6 +1,5 @@
 using eDhaq.Data;
 using eDhaq.Models.Entities;
-using eDhaq.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,24 +11,17 @@ namespace eDhaq.Web.Pages.Customer.Payments;
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
-    private readonly IPaymentService _paymentService;
 
-    public IndexModel(AppDbContext db, IPaymentService paymentService)
+    public IndexModel(AppDbContext db)
     {
         _db = db;
-        _paymentService = paymentService;
     }
 
     public List<Payment> Payments { get; private set; } = [];
+    public List<eDhaq.Models.Entities.Order> PendingOrders { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int? OrderId { get; set; }
-
-    [BindProperty]
-    public int PaymentId { get; set; }
-
-    [BindProperty]
-    public eDhaq.Models.Enums.PaymentMethod Method { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -46,54 +38,21 @@ public class IndexModel : PageModel
             return RedirectToPage("/Customer/Index");
         }
 
-        var all = await _paymentService.GetPaymentsAsync();
-        Payments = all.Where(x => x.Order.CustomerId == customer.Id).ToList();
+        // Read-only: payments are collected by the delivery driver, never by the customer.
+        Payments = await _db.Payments
+            .Include(x => x.Order)
+            .Where(x => x.Order.CustomerId == customer.Id)
+            .Where(x => !OrderId.HasValue || x.OrderId == OrderId.Value)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
 
-        if (OrderId.HasValue)
-        {
-            await _paymentService.EnsurePaymentForOrderAsync(OrderId.Value);
-            all = await _paymentService.GetPaymentsAsync();
-            Payments = all.Where(x => x.Order.CustomerId == customer.Id).ToList();
-        }
+        PendingOrders = await _db.Orders
+            .Where(x => x.CustomerId == customer.Id
+                        && x.PaymentStatus != eDhaq.Models.Enums.PaymentStatus.Paid
+                        && x.Status != eDhaq.Models.Enums.OrderStatus.Cancelled)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
 
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostPayAsync()
-    {
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Challenge();
-        }
-
-        var customer = await _db.Customers.FirstOrDefaultAsync(x => x.UserId == userId);
-        if (customer is null)
-        {
-            TempData["ErrorMessage"] = "Customer profile not found.";
-            return RedirectToPage("/Customer/Index");
-        }
-
-        var payment = await _db.Payments
-            .Include(x => x.Order)
-            .FirstOrDefaultAsync(x => x.Id == PaymentId && x.Order.CustomerId == customer.Id);
-
-        if (payment is null)
-        {
-            TempData["ErrorMessage"] = "Payment record not found.";
-            return RedirectToPage();
-        }
-
-        if (payment.Status == eDhaq.Models.Enums.PaymentStatus.Paid)
-        {
-            TempData["SuccessMessage"] = "Payment is already completed.";
-            return RedirectToPage(new { orderId = payment.OrderId });
-        }
-
-        await _paymentService.UpdatePaymentMethodAsync(payment.Id, Method);
-        await _paymentService.UpdatePaymentStatusAsync(payment.Id, eDhaq.Models.Enums.PaymentStatus.Paid, userId, "Customer self-payment");
-
-        TempData["SuccessMessage"] = $"Payment for order {payment.Order.OrderNumber} completed successfully.";
-        return RedirectToPage(new { orderId = payment.OrderId });
     }
 }

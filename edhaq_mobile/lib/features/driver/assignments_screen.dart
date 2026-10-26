@@ -220,8 +220,15 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
     );
   }
 
-  Future<void> _collectPayment(int assignmentId) async {
-    final result = await sl<CollectPaymentUseCase>()(assignmentId);
+  Future<void> _collectPayment(DriverAssignmentDetailModel assignment) async {
+    final args = await showModalBottomSheet<CollectPaymentArgs>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _CollectPaymentSheet(assignment: assignment),
+    );
+    if (args == null || !mounted) return;
+
+    final result = await sl<CollectPaymentUseCase>()(args);
 
     if (!mounted) return;
 
@@ -237,10 +244,10 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
       },
       (_) {
         Fluttertoast.showToast(
-          msg: 'Payment collected!',
+          msg: 'Payment of \$${assignment.totalAmount.toStringAsFixed(2)} recorded',
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
-          backgroundColor: AppTheme.secondaryColor,
+          backgroundColor: AppTheme.successColor,
           textColor: Colors.white,
         );
         _loadAssignments();
@@ -447,7 +454,7 @@ class _DriverAssignmentsScreenState extends State<DriverAssignmentsScreen> {
           onNotifyOnTheWay: () => _notifyOnTheWay(assignment.id),
           onNotifyAtGate: () => _notifyAtGate(assignment.id),
           onComplete: () => _completeAssignment(assignment.id),
-          onCollectPayment: () => _collectPayment(assignment.id),
+          onCollectPayment: () => _collectPayment(assignment),
         );
       },
     );
@@ -673,10 +680,10 @@ class _AssignmentCard extends StatelessWidget {
                     ],
                     if (assignment.canCollectPayment)
                       _smallButton(
-                        label: 'Collect Payment',
+                        label: 'Collect \$${assignment.totalAmount.toStringAsFixed(2)}',
                         icon: Icons.payments,
                         onPressed: onCollectPayment,
-                        color: AppTheme.accentColor,
+                        color: AppTheme.successColor,
                       ),
                     if (assignment.canComplete)
                       _smallButton(
@@ -749,6 +756,129 @@ class _LocationRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Bottom sheet where the driver confirms the amount received, how the
+/// customer paid, and (for mobile money) the transaction ID.
+class _CollectPaymentSheet extends StatefulWidget {
+  final DriverAssignmentDetailModel assignment;
+
+  const _CollectPaymentSheet({required this.assignment});
+
+  @override
+  State<_CollectPaymentSheet> createState() => _CollectPaymentSheetState();
+}
+
+class _CollectPaymentSheetState extends State<_CollectPaymentSheet> {
+  late PaymentMethod _method;
+  final _referenceController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final preferred = widget.assignment.paymentMethod;
+    _method = preferred == PaymentMethod.unknown ? PaymentMethod.cash : preferred;
+  }
+
+  @override
+  void dispose() {
+    _referenceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final a = widget.assignment;
+    final isCash = _method == PaymentMethod.cash;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 0, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Collect payment', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text('Order #${a.orderNumber} · ${a.customerName ?? 'Customer'}',
+                style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: AppTheme.successColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
+              ),
+              child: Column(
+                children: [
+                  Text('Amount to collect',
+                      style: theme.textTheme.labelMedium
+                          ?.copyWith(color: AppTheme.successColor)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '\$${a.totalAmount.toStringAsFixed(2)}',
+                    style: theme.textTheme.displaySmall
+                        ?.copyWith(color: AppTheme.successColor),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Paid with', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: PaymentMethod.values
+                  .where((m) => m != PaymentMethod.unknown)
+                  .map((m) => ChoiceChip(
+                        label: Text(m.displayName),
+                        selected: _method == m,
+                        onSelected: (_) => setState(() => _method = m),
+                      ))
+                  .toList(),
+            ),
+            if (!isCash) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _referenceController,
+                maxLength: 50,
+                decoration: const InputDecoration(
+                  labelText: 'Transaction ID (optional)',
+                  hintText: 'From the customer\'s payment SMS',
+                  prefixIcon: Icon(Icons.tag),
+                  counterText: '',
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.successColor,
+              ),
+              icon: const Icon(Icons.check_circle_rounded),
+              label: Text('I received \$${a.totalAmount.toStringAsFixed(2)}'),
+              onPressed: () => Navigator.of(context).pop(
+                CollectPaymentArgs(
+                  assignmentId: a.id,
+                  method: _method,
+                  transactionReference:
+                      isCash ? null : _referenceController.text.trim(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

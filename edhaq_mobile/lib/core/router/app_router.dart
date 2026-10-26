@@ -5,6 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/data/local/secure_storage_service.dart';
 import '../../core/data/models/user_model.dart';
 import '../../core/di/injection.dart';
+import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/role_selection_screen.dart';
@@ -32,6 +33,7 @@ abstract class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
+  static const String forgotPassword = '/forgot-password';
   static const String roleSelection = '/role-selection';
   static const String customerHome = '/home';
   static const String orders = '/orders';
@@ -92,7 +94,8 @@ final GoRouter appRouter = GoRouter(
     final isLoggedIn = token != null && token.isNotEmpty;
 
     final loggingIn = state.matchedLocation == AppRoutes.login ||
-        state.matchedLocation == AppRoutes.register;
+        state.matchedLocation == AppRoutes.register ||
+        state.matchedLocation == AppRoutes.forgotPassword;
     final selectingRole = state.matchedLocation == AppRoutes.roleSelection;
 
     // Not logged in → send to login (unless already on splash/login/register)
@@ -173,6 +176,13 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.register,
       name: 'register',
       builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.forgotPassword,
+      name: 'forgotPassword',
+      builder: (context, state) => ForgotPasswordScreen(
+        initialEmail: state.uri.queryParameters['email'],
+      ),
     ),
     GoRoute(
       path: AppRoutes.roleSelection,

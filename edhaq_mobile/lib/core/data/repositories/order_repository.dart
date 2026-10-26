@@ -14,7 +14,6 @@ abstract class OrderRepository {
   Future<Either<Failure, OrderDetailModel>> getOrder(int id);
   Future<Either<Failure, OrderSummaryModel>> createOrder(CreateOrderRequest request);
   Future<Either<Failure, OrderDetailModel>> confirmDelivery(int orderId);
-  Future<Either<Failure, void>> payOrder(int orderId, {String? transactionReference});
 
   // Driver
   Future<Either<Failure, List<DriverAssignmentDetailModel>>> getDriverAssignments({
@@ -27,7 +26,11 @@ abstract class OrderRepository {
   Future<Either<Failure, void>> notifyOnTheWay(int assignmentId);
   Future<Either<Failure, void>> notifyAtGate(int assignmentId);
   Future<Either<Failure, void>> completeDriverAssignment(int assignmentId);
-  Future<Either<Failure, void>> collectPaymentForAssignment(int assignmentId);
+  Future<Either<Failure, void>> collectPaymentForAssignment(
+    int assignmentId, {
+    required PaymentMethod method,
+    String? transactionReference,
+  });
 
   // Admin
   Future<Either<Failure, PagedOrdersResponse>> getAdminOrders({
@@ -94,17 +97,6 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<Either<Failure, void>> payOrder(int orderId,
-      {String? transactionReference}) async {
-    try {
-      await apiService.payOrder(orderId, transactionReference: transactionReference);
-      return const Right(null);
-    } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e));
-    }
-  }
-
-  @override
   Future<Either<Failure, List<DriverAssignmentDetailModel>>> getDriverAssignments({
     int page = 1,
     int pageSize = 20,
@@ -165,9 +157,17 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<Either<Failure, void>> collectPaymentForAssignment(int assignmentId) async {
+  Future<Either<Failure, void>> collectPaymentForAssignment(
+    int assignmentId, {
+    required PaymentMethod method,
+    String? transactionReference,
+  }) async {
     try {
-      await apiService.collectPaymentForAssignment(assignmentId);
+      await apiService.collectPaymentForAssignment(
+        assignmentId,
+        method: method,
+        transactionReference: transactionReference,
+      );
       return const Right(null);
     } on DioException catch (e) {
       return Left(mapDioExceptionToFailure(e));

@@ -15,13 +15,15 @@ public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
     private readonly IOrderService _orderService;
+    private readonly IPaymentService _paymentService;
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
 
-    public IndexModel(AppDbContext db, IOrderService orderService, IWebHostEnvironment environment, IConfiguration configuration)
+    public IndexModel(AppDbContext db, IOrderService orderService, IPaymentService paymentService, IWebHostEnvironment environment, IConfiguration configuration)
     {
         _db = db;
         _orderService = orderService;
+        _paymentService = paymentService;
         _environment = environment;
         _configuration = configuration;
     }
@@ -48,6 +50,12 @@ public class IndexModel : PageModel
 
     [BindProperty]
     public IFormFile? DeliveryPhoto { get; set; }
+
+    [BindProperty]
+    public PaymentMethod CollectedMethod { get; set; } = PaymentMethod.Cash;
+
+    [BindProperty]
+    public string? TransactionReference { get; set; }
 
         public async Task OnGetAsync()
     {
@@ -98,6 +106,10 @@ public class IndexModel : PageModel
             .Include(x => x.Order)
             .ThenInclude(x => x.Items)
             .ThenInclude(i => i.Service)
+            .Include(x => x.Order)
+            .ThenInclude(x => x.PickupAddress)
+            .Include(x => x.Order)
+            .ThenInclude(x => x.DeliveryAddress)
             .Include(x => x.Driver)
             .ThenInclude(x => x.User)
             .AsQueryable();
@@ -178,6 +190,30 @@ public class IndexModel : PageModel
         return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
     }
 
+    public async Task<IActionResult> OnPostCollectPaymentAsync()
+    {
+        var assignment = await LoadAssignmentForCurrentUserAsync();
+        if (assignment is null)
+        {
+            return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
+        }
+
+        if (!CanCollectPayment(assignment))
+        {
+            TempData["ErrorMessage"] = "Payment can only be collected on an accepted, unpaid delivery.";
+            return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
+        }
+
+        var payment = await _paymentService.RecordDriverCollectionAsync(
+            assignment.OrderId,
+            CollectedMethod,
+            TransactionReference,
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
+
+        TempData["SuccessMessage"] = $"Collected ${payment.Amount:N2} ({payment.Method}) for order {assignment.Order.OrderNumber}.";
+        return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
+    }
+
     public async Task<IActionResult> OnPostRejectAsync()
     {
         return await UpdateAssignmentStatusAsync(DriverJobAction.Rejected, addTrackingNote: true);
@@ -190,6 +226,11 @@ public class IndexModel : PageModel
 
     public bool CanStartTrip(DriverAssignment assignment)
         => assignment.Status == DriverJobAction.Accepted || assignment.Status == DriverJobAction.Pending;
+
+    public bool CanCollectPayment(DriverAssignment assignment)
+        => !assignment.IsPickup
+           && assignment.Status is DriverJobAction.Accepted or DriverJobAction.Completed
+           && assignment.Order.PaymentStatus != PaymentStatus.Paid;
 
     public string GetCompletionLabel(DriverAssignment assignment)
         => assignment.IsPickup ? "Picked Up" : "Delivered";
@@ -262,6 +303,12 @@ public class IndexModel : PageModel
             if (!assignment.IsPickup && !IsPickupComplete(assignment.Order))
             {
                 TempData["ErrorMessage"] = $"Pickup for order {assignment.Order.OrderNumber} must be completed before delivery can be marked delivered.";
+                return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
+            }
+
+            if (!assignment.IsPickup && assignment.Order.PaymentStatus != PaymentStatus.Paid)
+            {
+                TempData["ErrorMessage"] = $"Collect ${assignment.Order.TotalAmount:N2} for order {assignment.Order.OrderNumber} before marking it delivered.";
                 return RedirectToPage(new { Search, StatusFilter, IsPickupFilter, PageNumber });
             }
 

@@ -49,6 +49,15 @@ class ApiService {
     await _post('${AppConstants.authPath}/change-password', data: request.toJson());
   }
 
+  /// Emails a 6-digit reset code to [email] (if an account exists).
+  Future<void> forgotPassword(String email) async {
+    await _post('${AppConstants.authPath}/forgot-password', data: {'email': email});
+  }
+
+  Future<void> resetPassword(ResetPasswordRequest request) async {
+    await _post('${AppConstants.authPath}/reset-password', data: request.toJson());
+  }
+
   Future<AppUser> updateProfile(UpdateProfileRequest request) async {
     final response =
         await _put('${AppConstants.authPath}/profile', data: request.toJson());
@@ -159,17 +168,6 @@ class ApiService {
     return OrderDetailModel.fromJson(_toMap(response.data));
   }
 
-  /// Marks an order as paid after the customer dials the USSD payment code
-  /// (*884*442628*amount#). [transactionReference] is optional.
-  Future<void> payOrder(int orderId, {String? transactionReference}) async {
-    await _post(
-      '${AppConstants.ordersPath}/$orderId/pay',
-      data: transactionReference == null
-          ? null
-          : {'transactionReference': transactionReference},
-    );
-  }
-
   // ════════════════════════════════════════════════════════════════════════
   //  Notification endpoints  —  /api/notifications
   // ════════════════════════════════════════════════════════════════════════
@@ -256,9 +254,20 @@ class ApiService {
         '${AppConstants.ordersPath}/driver/assignments/$assignmentId/complete');
   }
 
-  Future<void> collectPaymentForAssignment(int assignmentId) async {
+  /// Records that the delivery driver collected payment from the customer.
+  Future<void> collectPaymentForAssignment(
+    int assignmentId, {
+    required PaymentMethod method,
+    String? transactionReference,
+  }) async {
     await _post(
-        '${AppConstants.ordersPath}/driver/assignments/$assignmentId/collect-payment');
+      '${AppConstants.ordersPath}/driver/assignments/$assignmentId/collect-payment',
+      data: {
+        'paymentMethod': method.toString().split('.').last,
+        if (transactionReference != null && transactionReference.isNotEmpty)
+          'transactionReference': transactionReference,
+      },
+    );
   }
 
   // ════════════════════════════════════════════════════════════════════════

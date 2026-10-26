@@ -484,7 +484,7 @@ class _ActionCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
+          border: Border.all(color: AppTheme.borderColor),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

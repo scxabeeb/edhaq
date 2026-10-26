@@ -17,13 +17,16 @@ public class AuthController : ApiControllerBase
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly AppDbContext _db;
     private readonly ITokenService _tokenService;
+    private readonly IPasswordResetService _passwordResetService;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         AppDbContext db,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        IPasswordResetService passwordResetService)
     {
+        _passwordResetService = passwordResetService;
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
@@ -295,6 +298,45 @@ public class AuthController : ApiControllerBase
         // JWT is stateless; nothing to revoke on the server side for now.
         await Task.CompletedTask;
         return Ok(new { message = "Logged out." });
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+        {
+            return BadRequest(new ProblemDetails { Title = "Enter a valid email address." });
+        }
+
+        await _passwordResetService.RequestCodeAsync(request.Email);
+
+        // Same answer whether or not the account exists.
+        return Ok(new { message = "If an account exists for this email, a 6-digit reset code has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code)
+            || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new ProblemDetails { Title = "Email, code and new password are required." });
+        }
+
+        if (request.NewPassword != request.ConfirmPassword)
+        {
+            return BadRequest(new ProblemDetails { Title = "New password and confirmation do not match." });
+        }
+
+        var result = await _passwordResetService.ResetAsync(request.Email, request.Code, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new ProblemDetails { Title = result.Error });
+        }
+
+        return Ok(new { message = "Password reset successfully. You can now sign in." });
     }
 
     [HttpPost("change-password")]

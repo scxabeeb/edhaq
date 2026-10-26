@@ -127,83 +127,110 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDashboard(ThemeData theme) {
     final dashboard = _dashboard!;
+    final firstName = dashboard.customerName.split(' ').first;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        // Welcome card
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome back,',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  dashboard.customerName,
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.local_shipping_outlined,
-                        label: 'Active Orders',
-                        value: '${dashboard.activeOrders}',
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.check_circle_outline,
-                        label: 'Completed',
-                        value: '${dashboard.completedOrders}',
-                        color: AppTheme.secondaryColor,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.account_balance_wallet_outlined,
-                        label: 'Wallet',
-                        value: '\$${dashboard.walletBalance.toStringAsFixed(2)}',
-                        color: AppTheme.accentColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        // ── Hero ───────────────────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: AppTheme.brandGradient,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withValues(alpha: 0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hello, $firstName 👋',
+                style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Fresh, clean laundry — picked up and delivered to your door.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 46,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.primaryColor,
+                    minimumSize: const Size(0, 46),
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  onPressed: () => context.push(AppRoutes.createOrder),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('New order'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Stats ──────────────────────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                icon: Icons.local_shipping_outlined,
+                label: 'Active',
+                value: '${dashboard.activeOrders}',
+                color: AppTheme.primaryColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.check_circle_outline,
+                label: 'Completed',
+                value: '${dashboard.completedOrders}',
+                color: AppTheme.successColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Wallet',
+                value: '\$${dashboard.walletBalance.toStringAsFixed(2)}',
+                color: AppTheme.infoColor,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
 
-        // Quick actions
+        // ── Quick actions ──────────────────────────────────────────────
+        Text('Quick actions', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: _ActionCard(
-                icon: Icons.add_circle_outline,
-                label: 'New Order',
-                onTap: () => context.push(AppRoutes.createOrder),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ActionCard(
-                icon: Icons.list_alt,
-                label: 'My Orders',
+                icon: Icons.receipt_long_outlined,
+                label: 'Orders',
                 onTap: () => context.push(AppRoutes.orders),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _ActionCard(
                 icon: Icons.location_on_outlined,
@@ -211,58 +238,85 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => context.push(AppRoutes.addresses),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
+            const SizedBox(width: 10),
             Expanded(
               child: _ActionCard(
-                icon: Icons.support_agent,
-                label: 'Contact Us',
+                icon: Icons.notifications_none_rounded,
+                label: 'Alerts',
+                onTap: () => context.push(AppRoutes.notifications),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionCard(
+                icon: Icons.support_agent_rounded,
+                label: 'Support',
                 onTap: () => context.push(AppRoutes.contact),
               ),
             ),
-            const SizedBox(width: 12),
-            const Expanded(child: SizedBox.shrink()),
-            const SizedBox(width: 12),
-            const Expanded(child: SizedBox.shrink()),
           ],
+        ),
+        const SizedBox(height: 16),
+
+        // ── Pay on delivery hint ───────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppTheme.infoColor.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
+            border: Border.all(color: AppTheme.infoColor.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.payments_outlined, color: AppTheme.infoColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Pay on delivery — your driver collects cash or mobile money when your laundry arrives.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textBody),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
 
-        // Recent orders
+        // ── Recent orders ──────────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Recent Orders', style: theme.textTheme.titleMedium),
+            Text('Recent orders', style: theme.textTheme.titleMedium),
             TextButton(
               onPressed: () => context.push(AppRoutes.orders),
-              child: const Text('View All'),
+              child: const Text('View all'),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         if (dashboard.recentOrders.isEmpty)
           Card(
+            margin: EdgeInsets.zero,
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.inbox_outlined,
-                    size: 48,
-                    color: theme.colorScheme.outline,
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.fillColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.local_laundry_service_outlined,
+                        size: 30, color: AppTheme.textHint),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No orders yet',
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  const SizedBox(height: 14),
+                  Text('No orders yet', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 4),
                   Text(
-                    'Place your first laundry order!',
+                    'Place your first laundry order and we\'ll pick it up.',
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
                 ],
@@ -271,34 +325,37 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           ...dashboard.recentOrders.map((order) => _OrderCard(order: order)),
-        const SizedBox(height: 24),
 
-        // Unread notifications
+        // ── Unread notifications ───────────────────────────────────────
         if (dashboard.unreadNotifications.isNotEmpty) ...[
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Notifications', style: theme.textTheme.titleMedium),
               TextButton(
                 onPressed: () => context.push(AppRoutes.notifications),
-                child: const Text('View All'),
+                child: const Text('View all'),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           ...dashboard.unreadNotifications.take(3).map((notification) => Card(
+                margin: const EdgeInsets.only(bottom: 10),
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    child: Icon(
-                      Icons.notifications,
-                      color: AppTheme.primaryColor,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primarySoft,
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: const Icon(Icons.notifications_rounded,
+                        color: AppTheme.primaryColor, size: 20),
                   ),
-                  title: Text(
-                    notification.title,
-                    style: theme.textTheme.labelLarge,
-                  ),
+                  title: Text(notification.title),
                   subtitle: Text(
                     notification.message,
                     maxLines: 2,
@@ -329,30 +386,37 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: AppTheme.borderColor),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          Text(label, style: theme.textTheme.labelMedium),
         ],
       ),
     );
@@ -373,26 +437,41 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: theme.textTheme.labelLarge,
-              textAlign: TextAlign.center,
-            ),
-          ],
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.radius),
+            border: Border.all(color: AppTheme.borderColor),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppTheme.primarySoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppTheme.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -407,32 +486,77 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDone = order.status == OrderStatus.delivered ||
+        order.status == OrderStatus.completed ||
+        order.status == OrderStatus.customerConfirmed;
+    final isCancelled = order.status == OrderStatus.cancelled;
+    final statusColor = isCancelled
+        ? AppTheme.errorColor
+        : isDone
+            ? AppTheme.successColor
+            : AppTheme.infoColor;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-          child: const Icon(
-            Icons.local_laundry_service,
-            color: AppTheme.primaryColor,
-          ),
-        ),
-        title: Text(
-          order.orderNumber,
-          style: theme.textTheme.labelLarge,
-        ),
-        subtitle: Text(
-          '${order.status.displayName} • ${_formatDate(order.createdAt)}',
-          style: theme.textTheme.bodySmall,
-        ),
-            trailing: Text(
-          '\$${order.totalAmount.toStringAsFixed(2)}',
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
         onTap: () => context.push('${AppRoutes.orderDetail}/${order.id}'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.primarySoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.local_laundry_service_rounded,
+                    color: AppTheme.primaryColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(order.orderNumber, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              order.status.displayName,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: statusColor,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(_formatDate(order.createdAt),
+                            style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '\$${order.totalAmount.toStringAsFixed(2)}',
+                style: theme.textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

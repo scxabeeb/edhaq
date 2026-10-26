@@ -48,25 +48,6 @@ class CreateOrderUseCase
       repository.createOrder(params);
 }
 
-/// Marks an order as paid after the customer dials the USSD payment code.
-class PayOrderUseCase implements Usecase<void, PayOrderArgs> {
-  final OrderRepository repository;
-
-  PayOrderUseCase(this.repository);
-
-  @override
-  Future<Either<Failure, void>> call(PayOrderArgs params) =>
-      repository.payOrder(params.orderId,
-          transactionReference: params.transactionReference);
-}
-
-class PayOrderArgs {
-  final int orderId;
-  final String? transactionReference;
-
-  const PayOrderArgs({required this.orderId, this.transactionReference});
-}
-
 /// Confirms delivery of an order.
 class ConfirmDeliveryUseCase implements Usecase<OrderDetailModel, int> {
   final OrderRepository repository;
@@ -157,15 +138,31 @@ class CompleteDriverAssignmentUseCase implements Usecase<void, int> {
       repository.completeDriverAssignment(assignmentId);
 }
 
-/// Collects payment for a delivery assignment.
-class CollectPaymentUseCase implements Usecase<void, int> {
+/// The delivery driver records the payment they collected from the customer.
+class CollectPaymentUseCase implements Usecase<void, CollectPaymentArgs> {
   final OrderRepository repository;
 
   CollectPaymentUseCase(this.repository);
 
   @override
-  Future<Either<Failure, void>> call(int assignmentId) =>
-      repository.collectPaymentForAssignment(assignmentId);
+  Future<Either<Failure, void>> call(CollectPaymentArgs params) =>
+      repository.collectPaymentForAssignment(
+        params.assignmentId,
+        method: params.method,
+        transactionReference: params.transactionReference,
+      );
+}
+
+class CollectPaymentArgs {
+  final int assignmentId;
+  final PaymentMethod method;
+  final String? transactionReference;
+
+  const CollectPaymentArgs({
+    required this.assignmentId,
+    required this.method,
+    this.transactionReference,
+  });
 }
 
 // ── Admin use cases ────────────────────────────────────────────────────────

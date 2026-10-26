@@ -3,12 +3,15 @@ using eDhaq.Models.Enums;
 
 namespace eDhaq.Web.Areas.Api.Dtos;
 
-public class PayOrderRequest
+/// <summary>
+/// Sent by the delivery driver when they collect payment from the customer.
+/// </summary>
+public class CollectPaymentRequest
 {
-    /// <summary>
-    /// Optional USSD transaction reference returned by the mobile-money
-    /// operator after the customer dials *884*442628*amount#.
-    /// </summary>
+    /// <summary>How the customer paid (Cash, EVCPlus, ZAAD…). Defaults to the order's method.</summary>
+    public PaymentMethod? PaymentMethod { get; set; }
+
+    /// <summary>Optional mobile-money transaction ID shown on the customer's receipt SMS.</summary>
     public string? TransactionReference { get; set; }
 }
 

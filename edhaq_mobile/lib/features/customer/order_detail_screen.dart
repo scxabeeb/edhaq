@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/data/models/order_models.dart';
@@ -21,19 +20,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _isLoading = true;
   String? _error;
   bool _confirming = false;
-  bool _paying = false;
-
-  /// USSD short-code for clearing the payment before delivery, per payment
-  /// method. e.g. Sahal: *884*442628*25#
-  static String _amountPart(double amount) =>
-      amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
-
-  static String _buildUssdCode(PaymentMethod method, double amount) =>
-      switch (method) {
-        PaymentMethod.sahal => '*884*442628*${_amountPart(amount)}#',
-        // Other methods: short code to be provided later.
-        _ => '',
-      };
 
   @override
   void initState() {
@@ -98,49 +84,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           textColor: Colors.white,
         );
       },
-    );
-  }
-
-  Future<void> _payOrder() async {
-    setState(() => _paying = true);
-
-    final result =
-        await sl<PayOrderUseCase>()(PayOrderArgs(orderId: widget.orderId));
-
-    if (!mounted) return;
-
-    result.fold(
-      (failure) {
-        setState(() => _paying = false);
-        Fluttertoast.showToast(
-          msg: failure.message,
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red.shade700,
-          textColor: Colors.white,
-        );
-      },
-      (_) {
-        Fluttertoast.showToast(
-          msg: 'Payment cleared! Delivery can now proceed.',
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: AppTheme.secondaryColor,
-          textColor: Colors.white,
-        );
-        _loadOrder();
-      },
-    );
-  }
-
-  void _copyUssdCode(String code) {
-    Clipboard.setData(ClipboardData(text: code));
-    Fluttertoast.showToast(
-      msg: 'USSD code copied: $code',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: AppTheme.primaryColor,
-      textColor: Colors.white,
     );
   }
 
@@ -251,19 +194,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
           ),
-          // USSD payment card (shown until the payment is cleared)
-          if (order.paymentStatus != PaymentStatus.paid) ...[
-            _UssdPaymentCard(
-              amount: order.totalAmount,
-              ussdCode:
-                  _buildUssdCode(order.paymentMethod, order.totalAmount),
-              onCopy: () => _copyUssdCode(
-                  _buildUssdCode(order.paymentMethod, order.totalAmount)),
-              onPaid: _payOrder,
-              paying: _paying,
-            ),
-            const SizedBox(height: 16),
-          ],
+          _PaymentCard(
+            amount: order.totalAmount,
+            method: order.paymentMethod,
+            isPaid: order.paymentStatus == PaymentStatus.paid,
+          ),
+          const SizedBox(height: 16),
 
           // Order flow progress stepper
           _OrderFlowStepper(status: order.status),
@@ -610,115 +546,72 @@ class _OrderFlowStepper extends StatelessWidget {
   }
 }
 
-class _UssdPaymentCard extends StatelessWidget {
+/// Payment is always collected by the delivery driver — the customer only
+/// sees what's due and, once collected, the confirmation.
+class _PaymentCard extends StatelessWidget {
   final double amount;
-  final String ussdCode;
-  final VoidCallback onCopy;
-  final VoidCallback onPaid;
-  final bool paying;
+  final PaymentMethod method;
+  final bool isPaid;
 
-  const _UssdPaymentCard({
+  const _PaymentCard({
     required this.amount,
-    required this.ussdCode,
-    required this.onCopy,
-    required this.onPaid,
-    required this.paying,
+    required this.method,
+    required this.isPaid,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      color: AppTheme.accentColor.withValues(alpha: 0.08),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final color = isPaid ? AppTheme.successColor : AppTheme.infoColor;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isPaid ? Icons.verified_rounded : Icons.local_shipping_rounded,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.phone_android,
-                    color: AppTheme.accentColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Clear payment to allow delivery',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppTheme.accentColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Text(
+                  isPaid ? 'Paid' : 'Pay on delivery',
+                  style: theme.textTheme.titleMedium?.copyWith(color: color),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isPaid
+                      ? 'Your driver collected \$${amount.toStringAsFixed(2)} '
+                          'via ${method.displayName}. Thank you!'
+                      : 'No need to pay in the app. Have '
+                          '\$${amount.toStringAsFixed(2)} ready — your driver '
+                          'collects payment (${method.displayName}) when they '
+                          'deliver your laundry.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textBody,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Your delivery driver cannot complete the delivery until this '
-              'order is paid. Dial the code below on your phone to pay '
-              '\$${amount.toStringAsFixed(2)}, then tap "I have paid".',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-            if (ussdCode.isEmpty)
-              Text(
-                'USSD payment code is not available yet for this payment method.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppTheme.accentColor.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Text(
-                  ussdCode,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: ussdCode.isEmpty ? null : onCopy,
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy Code'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: paying ? null : onPaid,
-                    icon: paying
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_outline, size: 18),
-                    label: const Text('I have paid'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

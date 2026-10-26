@@ -19,16 +19,8 @@ public class OrdersController : ApiControllerBase
     private readonly IDriverRepository _driverRepository;
     private readonly INotificationService _notificationService;
     private readonly ICustomerProfileService _customerProfileService;
+    private readonly IPaymentService _paymentService;
     private readonly AppDbContext _db;
-
-    /// <summary>
-    /// USSD payment short-code template. The {0} placeholder is replaced with
-    /// the amount to pay, e.g. *884*442628*25#
-    /// </summary>
-    public const string UssdPaymentTemplate = "*884*442628*{0}#";
-
-    public static string BuildUssdCode(decimal amount) =>
-        string.Format(UssdPaymentTemplate, Math.Round(amount, 2));
 
     public OrdersController(
         IOrderService orderService,
@@ -36,6 +28,7 @@ public class OrdersController : ApiControllerBase
         IDriverRepository driverRepository,
         INotificationService notificationService,
         ICustomerProfileService customerProfileService,
+        IPaymentService paymentService,
         AppDbContext db)
     {
         _orderService = orderService;
@@ -43,6 +36,7 @@ public class OrdersController : ApiControllerBase
         _driverRepository = driverRepository;
         _notificationService = notificationService;
         _customerProfileService = customerProfileService;
+        _paymentService = paymentService;
         _db = db;
     }
 
@@ -125,101 +119,6 @@ public class OrdersController : ApiControllerBase
             CreatedAt = order.CreatedAt,
             EstimatedCompletionAt = order.EstimatedCompletionAt
         });
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    //  Payment endpoints
-    // ════════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Returns the USSD payment code the customer should dial to clear the
-    /// payment for this order, e.g. *884*442628*25#
-    /// </summary>
-    [HttpGet("{id:int}/payment-ussd")]
-    public async Task<ActionResult<object>> GetPaymentUssd(int id)
-    {
-        var order = await _orderService.GetOrderDetailsAsync(id);
-        if (order is null)
-        {
-            return NotFound(new ProblemDetails { Title = "Order not found." });
-        }
-
-        var userId = GetCurrentUserId();
-        if (order.Customer.UserId != userId && !User.IsInRole("Administrator") && !User.IsInRole("Manager"))
-        {
-            return Forbid();
-        }
-
-        return Ok(new
-        {
-            orderId = order.Id,
-            orderNumber = order.OrderNumber,
-            amount = order.TotalAmount,
-            ussdCode = BuildUssdCode(order.TotalAmount),
-            paymentStatus = order.PaymentStatus.ToString(),
-            instruction = "Dial this code on your phone to complete the payment. Delivery will only happen after the payment is cleared."
-        });
-    }
-
-    /// <summary>
-    /// Customer confirms they have cleared the payment using the USSD code.
-    /// Marks the order as paid so that delivery can proceed.
-    /// </summary>
-    [HttpPost("{id:int}/pay")]
-    public async Task<IActionResult> PayOrder(int id, [FromBody] PayOrderRequest? request)
-    {
-        var order = await _db.Orders
-            .Include(o => o.Customer)
-            .ThenInclude(c => c.User)
-            .FirstOrDefaultAsync(o => o.Id == id);
-
-        if (order is null)
-        {
-            return NotFound(new ProblemDetails { Title = "Order not found." });
-        }
-
-        var userId = GetCurrentUserId();
-        if (order.Customer.UserId != userId && !User.IsInRole("Administrator") && !User.IsInRole("Manager"))
-        {
-            return Forbid();
-        }
-
-        if (order.PaymentStatus == PaymentStatus.Paid)
-        {
-            return BadRequest(new ProblemDetails { Title = "This order has already been paid." });
-        }
-
-        var reference = string.IsNullOrWhiteSpace(request?.TransactionReference)
-            ? $"USSD-{order.OrderNumber}-{DateTime.UtcNow:yyyyMMddHHmmss}"
-            : request!.TransactionReference!.Trim();
-
-        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == order.Id);
-        if (payment is null)
-        {
-            payment = new Payment { OrderId = order.Id };
-            _db.Payments.Add(payment);
-        }
-
-        payment.TransactionReference = reference;
-        payment.Method = order.PaymentMethod;
-        payment.Status = PaymentStatus.Paid;
-        payment.Amount = order.TotalAmount;
-        payment.GatewayResponse = "Paid via USSD " + BuildUssdCode(order.TotalAmount);
-        payment.PaidAt = DateTime.UtcNow;
-
-        order.PaymentStatus = PaymentStatus.Paid;
-        order.UpdatedAt = DateTime.UtcNow;
-
-        await _db.SaveChangesAsync();
-
-        await _notificationService.CreateAsync(
-            order.Customer.UserId,
-            "Payment received",
-            $"Your payment of ${order.TotalAmount:0.##} for order {order.OrderNumber} has been cleared. Your delivery can now proceed.",
-            NotificationType.PaymentConfirmed,
-            orderId: order.Id);
-
-        return Ok(new { message = "Payment cleared successfully.", ussdCode = BuildUssdCode(order.TotalAmount) });
     }
 
     [HttpPost("{id:int}/confirm-delivery")]
@@ -550,22 +449,13 @@ public class OrdersController : ApiControllerBase
             return BadRequest(new ProblemDetails { Title = "Pickup must be completed before delivery." });
         }
 
-        // ── Payment gate: delivery cannot be completed until payment is cleared ──
+        // ── Payment gate: the driver must collect payment before completing delivery ──
         if (!assignment.IsPickup && assignment.Order.PaymentStatus != PaymentStatus.Paid)
         {
-            var ussdCode = BuildUssdCode(assignment.Order.TotalAmount);
-
-            await _notificationService.CreateAsync(
-                assignment.Order.Customer.UserId,
-                "Payment required before delivery",
-                $"Your order {assignment.Order.OrderNumber} (${assignment.Order.TotalAmount:0.##}) cannot be delivered until the payment is cleared. Please dial {ussdCode} on your phone to pay, then mark it as paid in the app.",
-                NotificationType.PaymentReminder,
-                orderId: assignment.OrderId);
-
             return BadRequest(new ProblemDetails
             {
-                Title = "Payment must be cleared before delivery.",
-                Detail = $"The customer must dial {ussdCode} to clear the payment of ${assignment.Order.TotalAmount:0.##}. A notification has been sent to the customer."
+                Title = "Collect payment before completing delivery.",
+                Detail = $"Collect ${assignment.Order.TotalAmount:0.##} from the customer and record it with 'Collect Payment' first."
             });
         }
 
@@ -635,7 +525,7 @@ public class OrdersController : ApiControllerBase
 
     [HttpPost("driver/assignments/{assignmentId:int}/collect-payment")]
     [Authorize(Roles = "Administrator,DeliveryDriver")]
-    public async Task<IActionResult> CollectPayment(int assignmentId)
+    public async Task<IActionResult> CollectPayment(int assignmentId, [FromBody] CollectPaymentRequest? request)
     {
         var driver = await GetDriverAsync();
         if (driver is null)
@@ -657,24 +547,32 @@ public class OrdersController : ApiControllerBase
             return BadRequest(new ProblemDetails { Title = "Payment collection is only for delivery assignments." });
         }
 
+        if (assignment.Status is not (DriverJobAction.Accepted or DriverJobAction.Completed))
+        {
+            return BadRequest(new ProblemDetails { Title = "Accept the delivery before collecting payment." });
+        }
+
         if (assignment.Order.PaymentStatus == PaymentStatus.Paid)
         {
             return BadRequest(new ProblemDetails { Title = "Payment has already been collected for this order." });
         }
 
-        assignment.Order.PaymentStatus = PaymentStatus.Paid;
-        assignment.Order.UpdatedAt = DateTime.UtcNow;
+        var method = request?.PaymentMethod ?? assignment.Order.PaymentMethod;
+        if (!Enum.IsDefined(method))
+        {
+            return BadRequest(new ProblemDetails { Title = "Unknown payment method." });
+        }
 
-        await _db.SaveChangesAsync();
+        var payment = await _paymentService.RecordDriverCollectionAsync(
+            assignment.OrderId, method, request?.TransactionReference, GetCurrentUserId());
 
-        await _notificationService.CreateAsync(
-            assignment.Order.Customer.UserId,
-            "Payment received",
-            $"Your payment of ${assignment.Order.TotalAmount:0.##} for order {assignment.Order.OrderNumber} has been collected by the driver. Thank you!",
-            NotificationType.PaymentConfirmed,
-            orderId: assignment.OrderId);
-
-        return Ok(new { message = "Payment collected successfully." });
+        return Ok(new
+        {
+            message = "Payment collected successfully.",
+            amount = payment.Amount,
+            paymentMethod = payment.Method.ToString(),
+            transactionReference = payment.TransactionReference
+        });
     }
 
     // ════════════════════════════════════════════════════════════════════════

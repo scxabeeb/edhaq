@@ -1,45 +1,89 @@
 @page
 @model eDhaq.Web.Pages.Customer.Payments.IndexModel
+@using eDhaq.Models.Enums
 @{
     ViewData["Title"] = "My Payments";
 
     string FormatMoney(decimal amount) => "$" + amount.ToString("N2");
 }
 
-<h2 class="page-title mb-3">Payment History</h2>
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Payments</h2>
+        <p class="page-subtitle">Your receipts and anything still due on delivery.</p>
+    </div>
+</div>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body table-responsive">
-        <table class="table table-hover align-middle">
-            <thead><tr><th>Order</th><th>Reference</th><th>Method</th><th>Status</th><th>Amount</th><th>Date</th><th></th></tr></thead>
-            <tbody>
-            @foreach (var p in Model.Payments)
-            {
-                <tr>
-                    <td>@p.Order.OrderNumber</td>
-                    <td>@p.TransactionReference</td>
-                    <td>@p.Method</td>
-                    <td>@p.Status</td>
-                    <td>@FormatMoney(p.Amount)</td>
-                    <td>@p.CreatedAt.ToString("dd MMM yyyy HH:mm")</td>
-                    <td>
-                        @if (p.Status == eDhaq.Models.Enums.PaymentStatus.Pending)
+<div class="info-banner mb-4">
+    <div class="info-banner-icon"><i class="bi bi-truck"></i></div>
+    <div>
+        <strong>Pay on delivery</strong>
+        <div>You don't need to pay in the app. Your delivery driver collects payment (cash or mobile money) when they bring your laundry back, and your receipt appears here.</div>
+    </div>
+</div>
+
+@if (Model.PendingOrders.Any())
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Due on delivery</h5>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead><tr><th>Order</th><th>Status</th><th>Pay with</th><th class="text-end">Amount</th></tr></thead>
+                    <tbody>
+                    @foreach (var o in Model.PendingOrders)
+                    {
+                        <tr>
+                            <td><a asp-page="/Customer/Orders/Track" asp-route-orderId="@o.Id" class="fw-semibold">@o.OrderNumber</a></td>
+                            <td><span class="badge-soft badge-soft-info">@o.Status</span></td>
+                            <td>@o.PaymentMethod</td>
+                            <td class="text-end fw-semibold">@FormatMoney(o.TotalAmount)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Payment history</h5>
+        @if (!Model.Payments.Any())
+        {
+            <div class="empty-state">
+                <i class="bi bi-receipt"></i>
+                <p>No payments yet. Receipts show up here once a driver collects payment.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>Order</th><th>Reference</th><th>Method</th><th>Status</th><th class="text-end">Amount</th><th>Paid</th></tr></thead>
+                    <tbody>
+                    @foreach (var p in Model.Payments)
+                    {
+                        var badge = p.Status switch
                         {
-                            <form method="post" asp-page-handler="Pay" class="d-flex gap-2 align-items-center justify-content-end">
-                                <input type="hidden" name="PaymentId" value="@p.Id" />
-                                <select name="Method" class="form-select form-select-sm" style="max-width: 160px;">
-                                    @foreach (var method in Html.GetEnumSelectList<eDhaq.Models.Enums.PaymentMethod>())
-                                    {
-                                        <option value="@method.Value" selected="@(method.Text == p.Method.ToString())">@method.Text</option>
-                                    }
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-edhaq">Pay Now</button>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+                            PaymentStatus.Paid => "success",
+                            PaymentStatus.Pending => "warning",
+                            PaymentStatus.Failed => "danger",
+                            _ => "info"
+                        };
+                        <tr>
+                            <td class="fw-semibold">@p.Order.OrderNumber</td>
+                            <td class="text-muted small">@p.TransactionReference</td>
+                            <td>@p.Method</td>
+                            <td><span class="badge-soft badge-soft-@badge">@p.Status</span></td>
+                            <td class="text-end fw-semibold">@FormatMoney(p.Amount)</td>
+                            <td class="text-muted small">@((p.PaidAt ?? p.CreatedAt).ToString("dd MMM yyyy HH:mm"))</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 </div>

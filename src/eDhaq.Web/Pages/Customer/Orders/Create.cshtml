@@ -37,8 +37,9 @@
             </div>
 
             <div class="col-md-6">
-                <label class="form-label">Payment Method</label>
+                <label class="form-label">How you'll pay the driver</label>
                 <select asp-for="Input.PaymentMethod" class="form-select" asp-items="Html.GetEnumSelectList<eDhaq.Models.Enums.PaymentMethod>()"></select>
+                <div class="form-text"><i class="bi bi-truck"></i> Pay on delivery — your driver collects payment when they bring your laundry back.</div>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Promo Code</label>

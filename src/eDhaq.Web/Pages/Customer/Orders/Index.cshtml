@@ -47,7 +47,7 @@
                             <td>@item.CreatedAt.ToString("dd MMM yyyy")</td>
                             <td class="d-flex gap-1">
                                 <a class="btn btn-sm btn-outline-dark" asp-page="Invoice" asp-route-orderId="@item.Id">Invoice</a>
-                                <a class="btn btn-sm btn-outline-primary" asp-page="/Customer/Payments/Index" asp-route-orderId="@item.Id">Pay</a>
+                                <a class="btn btn-sm btn-outline-primary" asp-page="Track" asp-route-orderId="@item.Id">Track</a>
                             </td>
                         </tr>
                     }

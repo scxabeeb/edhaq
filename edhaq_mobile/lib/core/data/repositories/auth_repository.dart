@@ -12,6 +12,8 @@ abstract class AuthRepository {
   Future<Either<Failure, AppUser>> getCurrentUser();
   Future<Either<Failure, void>> logout();
   Future<Either<Failure, void>> changePassword(ChangePasswordRequest request);
+  Future<Either<Failure, void>> forgotPassword(String email);
+  Future<Either<Failure, void>> resetPassword(ResetPasswordRequest request);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -63,6 +65,26 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> changePassword(ChangePasswordRequest request) async {
     try {
       await apiService.changePassword(request);
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> forgotPassword(String email) async {
+    try {
+      await apiService.forgotPassword(email);
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetPassword(ResetPasswordRequest request) async {
+    try {
+      await apiService.resetPassword(request);
       return const Right(null);
     } on DioException catch (e) {
       return Left(mapDioExceptionToFailure(e));

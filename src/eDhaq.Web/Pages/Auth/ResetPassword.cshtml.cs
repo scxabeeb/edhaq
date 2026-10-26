@@ -1,6 +1,5 @@
-using eDhaq.Models.Entities;
+using eDhaq.Web.Core.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
@@ -10,11 +9,11 @@ namespace eDhaq.Web.Pages.Auth;
 [AllowAnonymous]
 public class ResetPasswordModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IPasswordResetService _passwordResetService;
 
-    public ResetPasswordModel(UserManager<ApplicationUser> userManager)
+    public ResetPasswordModel(IPasswordResetService passwordResetService)
     {
-        _userManager = userManager;
+        _passwordResetService = passwordResetService;
     }
 
     [BindProperty]
@@ -22,23 +21,22 @@ public class ResetPasswordModel : PageModel
 
     public class InputModel
     {
-        [Required, EmailAddress]
+        [Required, EmailAddress, Display(Name = "Email address")]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
-        public string Token { get; set; } = string.Empty;
+        [Required, RegularExpression(@"^\s*\d{6}\s*$", ErrorMessage = "Enter the 6-digit code from the email."), Display(Name = "Reset code")]
+        public string Code { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password)]
+        [Required, DataType(DataType.Password), MinLength(8), Display(Name = "New password")]
         public string Password { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password), Compare(nameof(Password))]
+        [Required, DataType(DataType.Password), Compare(nameof(Password), ErrorMessage = "Passwords do not match."), Display(Name = "Confirm new password")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
-    public void OnGet()
+    public void OnGet(string? email)
     {
-        Input.Email = TempData["ResetEmail"]?.ToString() ?? string.Empty;
-        Input.Token = TempData["ResetToken"]?.ToString() ?? string.Empty;
+        Input.Email = email ?? string.Empty;
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -48,24 +46,14 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        var user = await _userManager.FindByEmailAsync(Input.Email);
-        if (user is null)
-        {
-            TempData["ErrorMessage"] = "User not found.";
-            return Page();
-        }
-
-        var result = await _userManager.ResetPasswordAsync(user, Input.Token, Input.Password);
+        var result = await _passwordResetService.ResetAsync(Input.Email, Input.Code, Input.Password);
         if (!result.Succeeded)
         {
-            foreach (var err in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, err.Description);
-            }
+            ModelState.AddModelError(string.Empty, result.Error ?? "Unable to reset password.");
             return Page();
         }
 
-        TempData["SuccessMessage"] = "Password reset successfully.";
+        TempData["SuccessMessage"] = "Password reset successfully. Sign in with your new password.";
         return RedirectToPage("Login");
     }
 }

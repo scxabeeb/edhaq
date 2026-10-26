@@ -57,6 +57,8 @@ builder.Services.AddHttpContextAccessor();
 
 // Mobile API: JWT Bearer authentication
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT secret is not configured.");

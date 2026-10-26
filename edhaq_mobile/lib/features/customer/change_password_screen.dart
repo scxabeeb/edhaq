@@ -63,7 +63,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           msg: 'Password changed successfully',
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green.shade700,
+          backgroundColor: AppTheme.successColor,
           textColor: Colors.white,
         );
         context.pop();

@@ -602,30 +602,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           _buildCartPanel(theme),
           const SizedBox(height: 16),
 
-          // Payment method
-          Text('Payment Method', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: RadioGroup<PaymentMethod>(
-                groupValue: _paymentMethod,
-                onChanged: (value) {
-                  setState(() => _paymentMethod = value!);
-                },
-                child: Column(
-                  children: PaymentMethod.values
-                      .where((m) => m != PaymentMethod.unknown)
-                      .map((method) => RadioListTile<PaymentMethod>(
-                            title: Text(method.displayName),
-                            value: method,
-                          ))
-                      .toList(),
-                ),
-              ),
-            ),
+          // Payment method — preference only; the driver collects on delivery.
+          Text('How will you pay the driver?', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Pay on delivery. Your driver collects payment when they bring your laundry back.',
+            style: theme.textTheme.bodySmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: PaymentMethod.values
+                .where((m) => m != PaymentMethod.unknown)
+                .map((method) => ChoiceChip(
+                      label: Text(method.displayName),
+                      avatar: method == PaymentMethod.cash
+                          ? const Icon(Icons.payments_outlined, size: 18)
+                          : const Icon(Icons.phone_android, size: 18),
+                      selected: _paymentMethod == method,
+                      onSelected: (_) => setState(() => _paymentMethod = method),
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 20),
 
           // Coupon
           TextFormField(

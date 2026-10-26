@@ -137,4 +137,61 @@ public class PaymentService : IPaymentService
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<Payment> RecordDriverCollectionAsync(int orderId, PaymentMethod method, string? transactionReference, string? driverUserId)
+    {
+        var order = await _db.Orders
+            .Include(x => x.Customer)
+            .FirstOrDefaultAsync(x => x.Id == orderId)
+            ?? throw new InvalidOperationException("Order not found.");
+
+        if (order.PaymentStatus == PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Payment has already been collected for this order.");
+        }
+
+        var payment = await _db.Payments.FirstOrDefaultAsync(x => x.OrderId == orderId);
+        if (payment is null)
+        {
+            payment = new Payment { OrderId = orderId, CreatedAt = DateTime.UtcNow };
+            _db.Payments.Add(payment);
+        }
+
+        var reference = string.IsNullOrWhiteSpace(transactionReference)
+            ? $"DRV-{order.OrderNumber}-{DateTime.UtcNow:yyyyMMddHHmmss}"
+            : transactionReference.Trim();
+
+        payment.TransactionReference = reference.Length > 50 ? reference[..50] : reference;
+        payment.Method = method;
+        payment.Status = PaymentStatus.Paid;
+        payment.Amount = order.TotalAmount;
+        payment.GatewayResponse = $"Collected by driver ({method})";
+        payment.PaidAt = DateTime.UtcNow;
+
+        order.PaymentMethod = method;
+        order.PaymentStatus = PaymentStatus.Paid;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = driverUserId,
+            Action = "DriverCollectedPayment",
+            EntityName = nameof(Payment),
+            EntityId = orderId.ToString(),
+            NewValues = $"Method={method}; Amount={order.TotalAmount:0.00}; Reference={payment.TransactionReference}",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        await _notificationService.CreateAsync(
+            order.Customer.UserId,
+            "Payment received",
+            $"Your driver collected ${order.TotalAmount:0.##} ({method}) for order {order.OrderNumber}. Thank you!",
+            NotificationType.PaymentConfirmed,
+            "/Customer/Payments/Index",
+            order.Id);
+
+        return payment;
+    }
 }

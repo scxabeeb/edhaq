@@ -59,3 +59,25 @@ class ChangePasswordUseCase implements Usecase<void, ChangePasswordRequest> {
   Future<Either<Failure, void>> call(ChangePasswordRequest params) =>
       repository.changePassword(params);
 }
+
+/// Emails a password reset code to the given address.
+class ForgotPasswordUseCase implements Usecase<void, String> {
+  final AuthRepository repository;
+
+  ForgotPasswordUseCase(this.repository);
+
+  @override
+  Future<Either<Failure, void>> call(String email) =>
+      repository.forgotPassword(email);
+}
+
+/// Resets the password using the emailed code.
+class ResetPasswordUseCase implements Usecase<void, ResetPasswordRequest> {
+  final AuthRepository repository;
+
+  ResetPasswordUseCase(this.repository);
+
+  @override
+  Future<Either<Failure, void>> call(ResetPasswordRequest params) =>
+      repository.resetPassword(params);
+}

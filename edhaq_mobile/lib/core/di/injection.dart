@@ -76,6 +76,12 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<ChangePasswordUseCase>(
     () => ChangePasswordUseCase(sl<AuthRepository>()),
   );
+  sl.registerLazySingleton<ForgotPasswordUseCase>(
+    () => ForgotPasswordUseCase(sl<AuthRepository>()),
+  );
+  sl.registerLazySingleton<ResetPasswordUseCase>(
+    () => ResetPasswordUseCase(sl<AuthRepository>()),
+  );
 
   // Locations
   sl.registerLazySingleton<GetCitiesUseCase>(
@@ -119,9 +125,6 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<ConfirmDeliveryUseCase>(
     () => ConfirmDeliveryUseCase(sl<OrderRepository>()),
-  );
-  sl.registerLazySingleton<PayOrderUseCase>(
-    () => PayOrderUseCase(sl<OrderRepository>()),
   );
 
   // Orders (driver)

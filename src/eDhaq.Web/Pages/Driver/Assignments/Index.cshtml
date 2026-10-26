@@ -46,6 +46,7 @@
                     <th>Type</th>
                     <th>Status</th>
                     <th>Order Stage</th>
+                    <th>Payment</th>
                     <th>Proof</th>
                     <th>Actions</th>
                 </tr>
@@ -63,6 +64,20 @@
                         <td>@(a.IsPickup ? "Pickup" : "Delivery")</td>
                         <td>@a.Status</td>
                         <td>@a.Order.Status</td>
+                        <td>
+                            @if (a.IsPickup)
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                            else if (a.Order.PaymentStatus == eDhaq.Models.Enums.PaymentStatus.Paid)
+                            {
+                                <span class="badge-soft badge-soft-success"><i class="bi bi-check2"></i> Collected</span>
+                            }
+                            else
+                            {
+                                <span class="badge-soft badge-soft-warning">Collect $@a.Order.TotalAmount.ToString("N2")</span>
+                            }
+                        </td>
                         <td>
                             @if (!string.IsNullOrWhiteSpace(a.DeliveryPhotoUrl))
                             {
@@ -100,6 +115,27 @@
                                 <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
                                 <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
                             </form>
+                            @if (Model.CanCollectPayment(a))
+                            {
+                                <form method="post" asp-page-handler="CollectPayment" class="d-flex gap-1 align-items-center">
+                                    <input type="hidden" name="AssignmentId" value="@a.Id" />
+                                    <input type="hidden" name="Search" value="@Model.Search" />
+                                    <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                    <input type="hidden" name="IsPickupFilter" value="@Model.IsPickupFilter" />
+                                    <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                                    <select name="CollectedMethod" class="form-select form-select-sm" style="max-width:130px" aria-label="Payment method">
+                                        @foreach (var m in Html.GetEnumSelectList<eDhaq.Models.Enums.PaymentMethod>())
+                                        {
+                                            <option value="@m.Value" selected="@(m.Text == a.Order.PaymentMethod.ToString())">@m.Text</option>
+                                        }
+                                    </select>
+                                    <input type="text" name="TransactionReference" class="form-control form-control-sm" style="max-width:140px" placeholder="Txn ID (optional)" maxlength="50" />
+                                    <button class="btn btn-sm btn-success" type="submit"
+                                            onclick="return confirm('Confirm you received $@a.Order.TotalAmount.ToString("N2") for @a.Order.OrderNumber?');">
+                                        <i class="bi bi-cash-coin"></i> Collect $@a.Order.TotalAmount.ToString("N2")
+                                    </button>
+                                </form>
+                            }
                             <form method="post" asp-page-handler="Complete" enctype="multipart/form-data" class="d-flex gap-1">
                                 <input type="hidden" name="AssignmentId" value="@a.Id" />
                                 <input type="hidden" name="Search" value="@Model.Search" />
@@ -115,7 +151,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="@(7 + (Model.IsAdmin ? 1 : 0))" class="p-0 border-0">
+                        <td colspan="@(8 + (Model.IsAdmin ? 1 : 0))" class="p-0 border-0">
                             <div class="collapse" id="jobDetail-@a.Id">
                                 <div class="p-3 bg-light border rounded-3">
                                     <h6 class="fw-semibold mb-3">

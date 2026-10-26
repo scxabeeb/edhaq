@@ -297,11 +297,9 @@ public class OrderService : IOrderService
         // ── Payment clearance reminder when the order is marked Delivered but not yet paid ──
         if (dto.Status == OrderStatus.Delivered && order.PaymentStatus != PaymentStatus.Paid && customer is not null)
         {
-            var ussdCode = string.Format("*884*442628*{0}#", Math.Round(order.TotalAmount, 2));
-
             await _notificationService.CreateAsync(customer.UserId,
-                "Payment required – clear your payment",
-                $"Your order {order.OrderNumber} has been delivered but the payment of ${order.TotalAmount:0.##} is still pending. Please dial {ussdCode} on your phone to clear the payment, or pay from your app.",
+                "Payment pending",
+                $"Your order {order.OrderNumber} has been delivered and ${order.TotalAmount:0.##} is still pending. Our team will contact you to collect it.",
                 NotificationType.PaymentReminder,
                 $"/Customer/Orders/Track?orderId={order.Id}",
                 order.Id);
@@ -465,12 +463,10 @@ public class OrderService : IOrderService
         var customer = await _uow.Customers.GetByIdAsync(order.CustomerId);
         if (customer?.UserId is null) return;
 
-        var ussdCode = string.Format("*884*442628*{0}#", Math.Round(order.TotalAmount, 2));
-
         await _notificationService.CreateAsync(
             customer.UserId,
-            "Payment required before delivery",
-            $"A delivery driver has been assigned to your order {order.OrderNumber}. Please clear the pending payment of ${order.TotalAmount:0.##} before delivery — dial {ussdCode} on your phone or pay from the app.",
+            "Have your payment ready",
+            $"A delivery driver has been assigned to your order {order.OrderNumber}. Please have ${order.TotalAmount:0.##} ready — the driver will collect payment (cash or mobile money) on delivery.",
             NotificationType.PaymentReminder,
             $"/Customer/Orders/Track?orderId={order.Id}",
             order.Id);

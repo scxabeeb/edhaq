@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>edhaq_mobile</string>
+	<string>eDhaq</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,6 +45,14 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>eDhaq uses the camera so drivers can photograph a delivery as proof it was handed over.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>eDhaq lets you choose a photo from your library, for example as delivery proof or a profile picture.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>eDhaq uses your location while the app is open so drivers can be routed to your pickup and delivery address.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>tel</string>
