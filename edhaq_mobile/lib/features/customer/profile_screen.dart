@@ -1,9 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/data/local/secure_storage_service.dart';
 import '../../core/data/models/user_model.dart';
 import '../../core/di/injection.dart';
+import '../../core/network/api_service.dart';
+import '../../core/network/network_exception_mapper.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/usecases/auth_usecases.dart';
@@ -96,6 +99,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
         context.go(AppRoutes.login);
       },
     );
+  }
+
+  Future<void> _deleteAccount() async {
+    final passwordController = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This permanently deletes your e-Dhaq account and personal '
+              'information (name, email, phone and addresses). This cannot be undone.\n\n'
+              'Enter your password to confirm.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(passwordController.text),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (password == null || password.isEmpty) return;
+
+    try {
+      await sl<ApiService>().deleteAccount(password);
+    } on DioException catch (e) {
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: mapDioExceptionToFailure(e).message,
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red.shade700,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    await sl<SecureStorageService>().deleteAll();
+    if (!mounted) return;
+    Fluttertoast.showToast(msg: 'Your account has been deleted.');
+    context.go(AppRoutes.login);
   }
 
   @override
@@ -268,6 +333,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             foregroundColor: AppTheme.errorColor,
             side: const BorderSide(color: AppTheme.errorColor),
           ),
+        ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: _deleteAccount,
+          icon: const Icon(Icons.delete_forever_outlined),
+          label: const Text('Delete Account'),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
         ),
       ],
     );

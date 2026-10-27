@@ -58,6 +58,11 @@ class ApiService {
     await _post('${AppConstants.authPath}/reset-password', data: request.toJson());
   }
 
+  /// Permanently deletes the signed-in user's account. Requires the current password.
+  Future<void> deleteAccount(String password) async {
+    await _post('${AppConstants.authPath}/delete-account', data: {'password': password});
+  }
+
   Future<AppUser> updateProfile(UpdateProfileRequest request) async {
     final response =
         await _put('${AppConstants.authPath}/profile', data: request.toJson());

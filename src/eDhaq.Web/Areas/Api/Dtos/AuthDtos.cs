@@ -88,3 +88,8 @@ public static class UserDtos
         };
     }
 }
+
+public class DeleteAccountRequest
+{
+    public string Password { get; set; } = string.Empty;
+}

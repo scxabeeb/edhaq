@@ -417,4 +417,94 @@ public class AuthController : ApiControllerBase
 
         return Ok(subVillages);
     }
+
+    /// <summary>
+    /// Lets the signed-in user permanently delete their own account
+    /// (required by App Store guideline 5.1.1(v) and Google Play's account deletion policy).
+    /// Personal data is erased; past order and payment records are kept, anonymised,
+    /// for accounting as described in the privacy policy.
+    /// </summary>
+    [HttpPost("delete-account")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
+    {
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(new ProblemDetails { Title = "Authentication is required." });
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null || !user.IsActive)
+        {
+            return NotFound(new ProblemDetails { Title = "User not found." });
+        }
+
+        if (string.IsNullOrEmpty(request.Password) || !await _userManager.CheckPasswordAsync(user, request.Password))
+        {
+            return BadRequest(new ProblemDetails { Title = "Incorrect password." });
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var customer = await _db.Customers
+            .Include(c => c.Addresses)
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+
+        if (customer is not null)
+        {
+            customer.AlternatePhone = null;
+            customer.DateOfBirth = null;
+            customer.ReferralCode = null;
+            customer.ReferredByCode = null;
+
+            // Addresses may be referenced by past orders, so scrub them instead of deleting.
+            foreach (var address in customer.Addresses)
+            {
+                address.Label = "Deleted";
+                address.Street = "Deleted";
+                address.District = null;
+                address.Latitude = null;
+                address.Longitude = null;
+                address.IsDefault = false;
+            }
+        }
+
+        var notifications = await _db.Notifications.Where(n => n.UserId == userId).ToListAsync();
+        _db.Notifications.RemoveRange(notifications);
+        await _db.SaveChangesAsync();
+
+        var anonymousEmail = $"deleted-{Guid.NewGuid():N}@deleted.invalid";
+        user.FirstName = "Deleted";
+        user.LastName = "User";
+        user.PhoneNumber = null;
+        user.PhoneNumberConfirmed = false;
+        user.ProfileImageUrl = null;
+        user.IsActive = false;
+        user.RefreshToken = null;
+        user.RefreshTokenExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        var steps = new[]
+        {
+            await _userManager.SetUserNameAsync(user, anonymousEmail),
+            await _userManager.SetEmailAsync(user, anonymousEmail),
+            await _userManager.RemovePasswordAsync(user),
+            await _userManager.UpdateSecurityStampAsync(user),
+            await _userManager.UpdateAsync(user)
+        };
+
+        var failed = steps.FirstOrDefault(r => !r.Succeeded);
+        if (failed is not null)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Unable to delete account.",
+                Detail = string.Join(" ", failed.Errors.Select(e => e.Description))
+            });
+        }
+
+        await transaction.CommitAsync();
+        return Ok(new { message = "Your account has been deleted." });
+    }
 }

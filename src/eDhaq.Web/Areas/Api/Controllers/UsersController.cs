@@ -76,6 +76,7 @@ public class UsersController : ApiControllerBase
     /// Deletes a user account by id (Administrator/Manager only).
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = $"{AppRoles.Administrator},{AppRoles.Manager}", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> DeleteUser(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
