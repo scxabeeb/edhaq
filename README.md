@@ -101,10 +101,10 @@ Startup seeding creates:
 - Roles: `Administrator`, `Manager`, `Cashier`, `LaundryStaff`, `PickupDriver`, `DeliveryDriver`, `Customer`
 - Admin user:
   - Email: `admin@edhaq.com`
-  - Password: `Admin@123!`
+  - Password: set via the `SEED_ADMIN_PASSWORD` environment variable
 - Demo customer:
   - Email: `customer@edhaq.com`
-  - Password: `Customer@123!`
+  - Password: set via the `SEED_DEMO_CUSTOMER_PASSWORD` environment variable
 - Cities, service categories, laundry services
 - Default settings and sample coupons
 

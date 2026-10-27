@@ -67,7 +67,7 @@ public static class DbInitializer
         }
     }
 
-    // Admin user: admin@edhaq.com / Admin@123!
+    // Admin user: admin@edhaq.com (password from SEED_ADMIN_PASSWORD env var on first creation)
     private static async Task SeedAdminUserAsync(
         UserManager<ApplicationUser> userManager,
         AppDbContext db,
@@ -82,9 +82,7 @@ public static class DbInitializer
             // so deleting the user violates the FK and crashes startup. Update in place.
             logger.LogInformation("Admin user already exists, ensuring password/role/profile: {Email}", email);
 
-            // Reset password to the known default.
-            var token = await userManager.GeneratePasswordResetTokenAsync(existingAdmin);
-            await userManager.ResetPasswordAsync(existingAdmin, token, "Admin@123!");
+            // Never reset an existing admin's password on startup.
 
             existingAdmin.IsActive = true;
             existingAdmin.EmailConfirmed = true;
@@ -110,7 +108,16 @@ public static class DbInitializer
                 });
             }
 
-            logger.LogInformation("Seeded admin user: {Email} / Admin@123!", email);
+            logger.LogInformation("Seeded admin user: {Email}", email);
+            return;
+        }
+
+        // The first admin's password comes from the SEED_ADMIN_PASSWORD environment variable.
+        // Without it, no admin is created (no default passwords in source code).
+        var adminPassword = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD");
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            logger.LogWarning("SEED_ADMIN_PASSWORD is not set; skipping admin user creation.");
             return;
         }
 
@@ -124,7 +131,7 @@ public static class DbInitializer
             IsActive = true
         };
 
-        var result = await userManager.CreateAsync(admin, "Admin@123!");
+        var result = await userManager.CreateAsync(admin, adminPassword);
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
@@ -145,16 +152,24 @@ public static class DbInitializer
             CreatedAt = DateTime.UtcNow
         });
 
-        logger.LogInformation("Seeded admin user: {Email} / Admin@123!", email);
+        logger.LogInformation("Seeded admin user: {Email}", email);
     }
 
-    // Demo customer: customer@edhaq.com / Customer@123!
+    // Demo customer for app-store reviewers: customer@edhaq.com.
+    // Password comes from the SEED_DEMO_CUSTOMER_PASSWORD environment variable; if it is
+    // not set, the demo customer is neither created nor reset.
     private static async Task SeedDemoCustomerAsync(
         UserManager<ApplicationUser> userManager,
         AppDbContext db,
         ILogger logger)
     {
         const string email = "customer@edhaq.com";
+        var demoPassword = Environment.GetEnvironmentVariable("SEED_DEMO_CUSTOMER_PASSWORD");
+        if (string.IsNullOrWhiteSpace(demoPassword))
+        {
+            logger.LogInformation("SEED_DEMO_CUSTOMER_PASSWORD is not set; skipping demo customer.");
+            return;
+        }
 
         var existingCustomer = await userManager.FindByEmailAsync(email);
         if (existingCustomer is not null)
@@ -164,7 +179,7 @@ public static class DbInitializer
             logger.LogInformation("Demo customer already exists, ensuring password/role/profile: {Email}", email);
 
             var token = await userManager.GeneratePasswordResetTokenAsync(existingCustomer);
-            await userManager.ResetPasswordAsync(existingCustomer, token, "Customer@123!");
+            await userManager.ResetPasswordAsync(existingCustomer, token, demoPassword);
 
             existingCustomer.IsActive = true;
             existingCustomer.EmailConfirmed = true;
@@ -186,7 +201,7 @@ public static class DbInitializer
                 });
             }
 
-            logger.LogInformation("Seeded demo customer: {Email} / Customer@123!", email);
+            logger.LogInformation("Seeded demo customer: {Email}", email);
             return;
         }
 
@@ -200,7 +215,7 @@ public static class DbInitializer
             IsActive = true
         };
 
-        var result = await userManager.CreateAsync(customerUser, "Customer@123!");
+        var result = await userManager.CreateAsync(customerUser, demoPassword);
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
@@ -218,7 +233,7 @@ public static class DbInitializer
             CreatedAt = DateTime.UtcNow
         });
 
-        logger.LogInformation("Seeded demo customer: {Email} / Customer@123!", email);
+        logger.LogInformation("Seeded demo customer: {Email}", email);
     }
 
     // Default public support contacts shown in the mobile apps.
